@@ -104,7 +104,7 @@ struct ContentView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background(Color.blue.opacity(0.1))
-                        .cornerRadius(8)
+                        .cornerRadius(28)
                     }
                     
                     Spacer()
@@ -130,7 +130,6 @@ struct ContentView: View {
                         .foregroundColor(.blue)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(Color.blue.opacity(0.1))
                         .cornerRadius(8)
                     }
                     
@@ -154,7 +153,7 @@ struct ContentView: View {
                     )
                 }
             }
-            .navigationTitle("You-Log")
+            .navigationTitle("图片日志")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {

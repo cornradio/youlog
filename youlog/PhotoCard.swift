@@ -107,10 +107,14 @@ struct PhotoCard: View {
                                 }) {
                                     Text(item.tag ?? "全部")
                                         .font(.caption)
-                                        .foregroundColor(.white)
+                                        .foregroundColor(.primary)
                                         .padding(2)
-                                        .background(Color.blue.opacity(0.5))
+                                        .background(.indigo.opacity(0.1))
                                         .cornerRadius(4)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 2)
+                                                .stroke(Color.gray, lineWidth: 1)
+                                        )
                                 }
                                 //button for more actions
                                 Menu {
