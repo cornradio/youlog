@@ -81,7 +81,17 @@ struct PhotoCard: View {
                         
                         VStack(alignment: .leading, spacing: 4) {
                             HStack{
-                                //time
+                                //hhmm
+                                var dateFormatter2: DateFormatter {
+                                    let formatter = DateFormatter()
+                                    formatter.dateFormat = "HH:mm"
+                                    return formatter
+                                }
+                                Text(item.timestamp, formatter: dateFormatter2)
+                                    .font(.caption)
+                                    .foregroundColor(.primary)
+                                
+                                //yymm
                                 var dateFormatter1: DateFormatter {
                                     let formatter = DateFormatter()
                                     formatter.dateFormat = "MM/dd"
@@ -91,14 +101,7 @@ struct PhotoCard: View {
                                     .font(.caption)
                                     .bold()
                                     .foregroundColor(.secondary)
-                                var dateFormatter2: DateFormatter {
-                                    let formatter = DateFormatter()
-                                    formatter.dateFormat = "HH:mm"
-                                    return formatter
-                                }
-                                Text(item.timestamp, formatter: dateFormatter2)
-                                    .font(.caption)
-                                    .foregroundColor(.primary)
+
 
                                 //tag
                                 Button(action: {
@@ -113,7 +116,7 @@ struct PhotoCard: View {
                                         .cornerRadius(4)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 2)
-                                                .stroke(Color.gray, lineWidth: 1)
+                                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                                         )
                                 }
                                 //button for more actions

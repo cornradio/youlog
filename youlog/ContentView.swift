@@ -153,7 +153,7 @@ struct ContentView: View {
                     )
                 }
             }
-            .navigationTitle("图片日志")
+            .navigationTitle("记录你的变化")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
