@@ -5,46 +5,79 @@ struct CameraView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @StateObject private var camera = CameraModel()
+    @Binding var selectedTag: String?
     
     var body: some View {
         ZStack {
+            // 相机预览
             CameraPreview(camera: camera)
                 .ignoresSafeArea()
             
+            // 半透明遮罩
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+            
             VStack {
-                Spacer()
-                
+                // 顶部工具栏
                 HStack {
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
-                            .font(.title)
+                            .font(.title2)
                             .foregroundColor(.white)
                             .padding()
-                    }
-                    
-                    Spacer()
-                    
-                    Button(action: { camera.takePicture() }) {
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 65, height: 65)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.black.opacity(0.8), lineWidth: 2)
-                                    .padding(4)
-                            )
                     }
                     
                     Spacer()
                     
                     Button(action: { camera.switchCamera() }) {
                         Image(systemName: "camera.rotate")
-                            .font(.title)
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .padding()
+                    }
+                    
+                    Button(action: { camera.toggleFlash() }) {
+                        Image(systemName: camera.isFlashOn ? "bolt.fill" : "bolt.slash.fill")
+                            .font(.title2)
                             .foregroundColor(.white)
                             .padding()
                     }
                 }
-                .padding(.bottom, 30)
+                
+                // 标签选择器
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(AppConstants.availableTags, id: \.self) { tag in
+                            TagButtonCam(
+                                title: tag,
+                                isSelected: selectedTag == nil ? tag == "全部" : selectedTag == tag,
+                                action: {
+                                    selectedTag = tag == "全部" ? nil : tag
+                                }
+                            )
+                        }
+                    }
+                    .padding()
+                }
+                
+                Spacer()
+                
+                // 底部控制栏
+                VStack(spacing: 20) {
+                    // 拍摄按钮
+                    Button(action: { camera.takePicture() }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 75, height: 75)
+                            
+                            Circle()
+                                .stroke(Color.white, lineWidth: 2)
+                                .frame(width: 85, height: 85)
+                        }
+                    }
+                    .padding(.bottom, 30)
+                }
             }
         }
         .onAppear {
@@ -53,7 +86,7 @@ struct CameraView: View {
         .onChange(of: camera.image) { _, newImage in
             if let image = newImage,
                let imageData = image.jpegData(compressionQuality: 0.8) {
-                let newItem = Item(timestamp: Date(), imageData: imageData)
+                let newItem = Item(timestamp: Date(), imageData: imageData, tag: selectedTag)
                 modelContext.insert(newItem)
                 dismiss()
             }
@@ -80,6 +113,7 @@ class CameraModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
     @Published var alert = false
     @Published var output = AVCapturePhotoOutput()
     @Published var preview: AVCaptureVideoPreviewLayer!
+    @Published var isFlashOn = false
     
     func checkPermissions() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
@@ -131,8 +165,10 @@ class CameraModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
     }
     
     func takePicture() {
+        let settings = AVCapturePhotoSettings()
+        settings.flashMode = isFlashOn ? .on : .off
         DispatchQueue.global(qos: .background).async {
-            self.output.capturePhoto(with: AVCapturePhotoSettings(), delegate: self)
+            self.output.capturePhoto(with: settings, delegate: self)
         }
     }
     
@@ -166,6 +202,10 @@ class CameraModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
         
         session.commitConfiguration()
     }
+    
+    func toggleFlash() {
+        isFlashOn.toggle()
+    }
 }
 
 struct CameraPreview: UIViewRepresentable {
@@ -182,4 +222,24 @@ struct CameraPreview: UIViewRepresentable {
     
     func updateUIView(_ uiView: UIView, context: Context) {
     }
-} 
+}
+
+struct TagButtonCam: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(isSelected ? Color.blue : Color.white.opacity(0.3))
+                .foregroundColor(isSelected ? .white : .white)
+                .cornerRadius(20)
+        }
+    }
+}
+
+

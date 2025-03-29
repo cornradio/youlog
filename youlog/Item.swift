@@ -14,12 +14,14 @@ final class Item {
     var imageData: Data?
     var note: String?
     var location: LocationData?
+    var tag: String?
     
-    init(timestamp: Date, imageData: Data? = nil, note: String? = nil, location: LocationData? = nil) {
+    init(timestamp: Date, imageData: Data? = nil, note: String? = nil, location: LocationData? = nil, tag: String? = nil) {
         self.timestamp = timestamp
         self.imageData = imageData
         self.note = note
         self.location = location
+        self.tag = tag
     }
 }
 

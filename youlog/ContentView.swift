@@ -19,11 +19,17 @@ struct PhotoTimelineView: View {
     let items: [Item]
     @Binding var selectedDate: Date
     let scrollToItem: (Item) -> Void
+    @State private var isFirstAppear = true
+    
+    // 定义自适应网格列
+    private let columns = [
+        GridItem(.adaptive(minimum: 150, maximum: 200), spacing: 16)
+    ]
     
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 20) {
+                LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                         PhotoCard(item: item)
                             .id(item.id)
@@ -38,7 +44,10 @@ struct PhotoTimelineView: View {
                 .padding()
             }
             .onAppear {
-                proxy.scrollTo(items.first?.id, anchor: .top)
+                if isFirstAppear {
+                    proxy.scrollTo(items.first?.id, anchor: .top)
+                    isFirstAppear = false
+                }
             }
         }
     }
@@ -61,26 +70,35 @@ struct ContentView: View {
     @State private var showingDateFilter = false
     @State private var showingDeleteAllAlert = false
     @State private var showingHelp = false
+    @State private var selectedTag: String? = nil
     
     enum TimeRange {
         case day, week, month
     }
     
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yy.MM.dd"
+        return formatter
+    }()
+    
     var filteredItems: [Item] {
         items.filter { item in
-            item.timestamp >= startDate && item.timestamp <= endDate
+            let dateFilter = item.timestamp >= startDate && item.timestamp <= endDate
+            let tagFilter = selectedTag == nil || selectedTag == "全部" || item.tag == selectedTag
+            return dateFilter && tagFilter
         }
     }
     
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // 日期筛选栏
+                // 日期筛选栏和 Tag 选择器
                 HStack {
                     Button(action: { showingDateFilter = true }) {
                         HStack {
                             Image(systemName: "calendar")
-                            Text("\(startDate.formatted(date: .abbreviated, time: .omitted)) - \(endDate.formatted(date: .abbreviated, time: .omitted))")
+                            Text("\(dateFormatter.string(from: startDate)) - \(dateFormatter.string(from: endDate))")
                         }
                         .foregroundColor(.blue)
                         .padding(.horizontal, 12)
@@ -88,7 +106,43 @@ struct ContentView: View {
                         .background(Color.blue.opacity(0.1))
                         .cornerRadius(8)
                     }
+                    
                     Spacer()
+                    
+                    Menu {
+                        ForEach(AppConstants.availableTags, id: \.self) { tag in
+                            Button(action: {
+                                selectedTag = tag == "全部" ? nil : tag
+                            }) {
+                                HStack {
+                                    Text(tag)
+                                    if (selectedTag == nil && tag == "全部") || selectedTag == tag {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "tag")
+                            Text(selectedTag ?? "全部")
+                        }
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    
+                    Button(action: { showingCamera = true }) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.blue)
+                            .cornerRadius(8)
+                    }
                 }
                 .padding()
                 
@@ -135,8 +189,8 @@ struct ContentView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingCamera) {
-                CameraView()
+            .fullScreenCover(isPresented: $showingCamera) {
+                CameraView(selectedTag: $selectedTag)
             }
             .sheet(isPresented: $showingImagePicker) {
                 ImagePickerView { imageData in
@@ -167,7 +221,7 @@ struct ContentView: View {
     
     private func addItem(imageData: Data? = nil) {
         withAnimation {
-            let newItem = Item(timestamp: Date(), imageData: imageData)
+            let newItem = Item(timestamp: Date(), imageData: imageData, tag: selectedTag)
             modelContext.insert(newItem)
         }
     }
@@ -329,106 +383,6 @@ struct ImagePickerView: UIViewControllerRepresentable {
     }
 }
 
-struct PhotoCard: View {
-    let item: Item
-    @Environment(\.modelContext) private var modelContext
-    @State private var showingDeleteAlert = false
-    @State private var showingFullScreen = false
-    @State private var showingSaveSuccess = false
-    @State private var showingQuickActions = false
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let imageData = item.imageData,
-               let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 300)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .onTapGesture {
-                        showingFullScreen = true
-                    }
-                    .onLongPressGesture(minimumDuration: 0.5) {
-                        showingQuickActions = true
-                    }
-                    .confirmationDialog("快速操作", isPresented: $showingQuickActions) {
-                        Button("保存到相册") {
-                            UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
-                            showingSaveSuccess = true
-                        }
-                        
-                        Button("删除照片", role: .destructive) {
-                            showingDeleteAlert = true
-                        }
-                        
-                        Button("取消", role: .cancel) { }
-                    }
-            } else {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(height: 300)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay {
-                        Image(systemName: "photo")
-                            .font(.largeTitle)
-                            .foregroundColor(.gray)
-                    }
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(item.timestamp, format: .dateTime)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("save")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                        .onTapGesture {
-                            if let imageData = item.imageData,
-                               let uiImage = UIImage(data: imageData) {
-                                UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
-                                showingSaveSuccess = true
-                            }
-                        }
-                    Text("del")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .onTapGesture {
-                            showingDeleteAlert = true
-                        }
-                }
-                
-                if let note = item.note, !note.isEmpty {
-                    Text(note)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                }
-            }
-            .padding(.horizontal, 4)
-        }
-        .alert("删除照片", isPresented: $showingDeleteAlert) {
-            Button("取消", role: .cancel) { }
-            Button("删除", role: .destructive) {
-                modelContext.delete(item)
-            }
-        } message: {
-            Text("确定要删除这张照片吗？")
-        }
-        .alert("保存成功", isPresented: $showingSaveSuccess) {
-            Button("确定", role: .cancel) { }
-        } message: {
-            Text("照片已保存到相册")
-        }
-        .fullScreenCover(isPresented: $showingFullScreen) {
-            if let imageData = item.imageData,
-               let uiImage = UIImage(data: imageData) {
-                ImageDetailView(image: uiImage, item: item)
-            }
-        }
-    }
-}
 
 struct HelpView: View {
     @Environment(\.dismiss) private var dismiss
@@ -475,102 +429,7 @@ struct HelpView: View {
 }
 
 
-struct PlaybackView: View {
-    let items: [Item]
-    @Binding var currentIndex: Int
-    @Environment(\.dismiss) private var dismiss
-    @State private var isPlaying = false
-    @State private var preloadedImages: [UIImage] = []
-    @State private var timer: Timer?
-    
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            
-            if !preloadedImages.isEmpty {
-                Image(uiImage: preloadedImages[currentIndex])
-                    .resizable()
-                    .scaledToFit()
-            }
-            
-            VStack {
-                HStack {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .font(.title)
-                            .foregroundColor(.white)
-                            .padding()
-                    }
-                    Spacer()
-                }
-                Spacer()
-                
-                // 底部控制栏
-                HStack(spacing: 10) {
-                    // 播放/暂停按钮
-                    Button(action: {
-                        if isPlaying {
-                            timer?.invalidate()
-                            timer = nil
-                        } else {
-                            startTimer()
-                        }
-                        isPlaying.toggle()
-                    }) {
-                        Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(.white)
-                            .padding()
-                    }
-                    
-                    // 拖动条
-                    Slider(value: Binding(
-                        get: { Double(currentIndex) },
-                        set: { newValue in
-                            currentIndex = Int(newValue)
-                            if isPlaying {
-                                timer?.invalidate()
-                                startTimer()
-                            }
-                        }
-                    ), in: 0...Double(items.count - 1), step: 1)
-                    .padding(.horizontal)
-                    
-                    // 当前索引显示
-                    Text("\(currentIndex + 1) / \(items.count)")
-                        .foregroundColor(.white)
-                        .font(.caption)
-                        .padding(.horizontal)
-                }
-                .padding(.bottom, 20)
-            }
-        }
-        .onAppear {
-            preloadImages()
-        }
-        .onDisappear {
-            timer?.invalidate()
-            timer = nil
-        }
-    }
-    
-    private func preloadImages() {
-        preloadedImages = []
-        for item in items {
-            if let imageData = item.imageData,
-               let image = UIImage(data: imageData) {
-                preloadedImages.append(image)
-            }
-        }
-    }
-    
-    private func startTimer() {
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { _ in
-            currentIndex = (currentIndex + 1) % items.count
-        }
-    }
-}
+
 
 // 添加图片缩放扩展
 extension UIImage {
@@ -585,6 +444,25 @@ extension UIImage {
 extension Array {
     subscript(safe index: Int) -> Element? {
         return indices.contains(index) ? self[index] : nil
+    }
+}
+
+struct TagButton: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline)
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(isSelected ? Color.blue : Color.gray.opacity(0.3))
+                .cornerRadius(8)
+//                .foregroundColor(.white)
+        }
     }
 }
 
