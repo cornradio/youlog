@@ -11,8 +11,20 @@ import SwiftData
 @Model
 final class Item {
     var timestamp: Date
+    var imageData: Data?
+    var note: String?
+    var location: LocationData?
     
-    init(timestamp: Date) {
+    init(timestamp: Date, imageData: Data? = nil, note: String? = nil, location: LocationData? = nil) {
         self.timestamp = timestamp
+        self.imageData = imageData
+        self.note = note
+        self.location = location
     }
+}
+
+struct LocationData: Codable {
+    var latitude: Double
+    var longitude: Double
+    var heading: Double
 }

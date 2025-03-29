@@ -7,51 +7,584 @@
 
 import SwiftUI
 import SwiftData
+import PhotosUI
+import Photos
+import AVKit
+import AVFoundation
+
+import PhotosUI
+import SwiftUI
+
+struct PhotoTimelineView: View {
+    let items: [Item]
+    @Binding var selectedDate: Date
+    let scrollToItem: (Item) -> Void
+    
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 20) {
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                        PhotoCard(item: item)
+                            .id(item.id)
+                            .onTapGesture {
+                                withAnimation {
+                                    selectedDate = item.timestamp
+                                    scrollToItem(item)
+                                }
+                            }
+                    }
+                }
+                .padding()
+            }
+            .onAppear {
+                proxy.scrollTo(items.first?.id, anchor: .top)
+            }
+        }
+    }
+}
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
-    var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            Text("Select an item")
+    @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
+    @State private var showingCamera = false
+    @State private var selectedTimeRange: TimeRange = .day
+    @State private var selectedDate = Date()
+    @State private var showingDatePicker = false
+    @State private var editingItem: Item?
+    @State private var showingPlayback = false
+    @State private var scrollProxy: ScrollViewProxy?
+    @State private var showingImagePicker = false
+    @State private var currentPlaybackIndex = 0
+    @State private var startDate: Date = Calendar.current.startOfDay(for: Date())
+    @State private var endDate: Date = Calendar.current.endOfDay(for: Date())
+    @State private var showingDateFilter = false
+    @State private var showingDeleteAllAlert = false
+    @State private var showingHelp = false
+    
+    enum TimeRange {
+        case day, week, month
+    }
+    
+    var filteredItems: [Item] {
+        items.filter { item in
+            item.timestamp >= startDate && item.timestamp <= endDate
         }
     }
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // 日期筛选栏
+                HStack {
+                    Button(action: { showingDateFilter = true }) {
+                        HStack {
+                            Image(systemName: "calendar")
+                            Text("\(startDate.formatted(date: .abbreviated, time: .omitted)) - \(endDate.formatted(date: .abbreviated, time: .omitted))")
+                        }
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    Spacer()
+                }
+                .padding()
+                
+                HStack(spacing: 0) {
+                    PhotoTimelineView(
+                        items: filteredItems,
+                        selectedDate: $selectedDate,
+                        scrollToItem: scrollToItem
+                    )
+                }
+            }
+            .navigationTitle("You-Log")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button(action: { showingCamera = true }) {
+                            Label("拍照", systemImage: "camera")
+                        }
 
-    private func addItem() {
+                        Button(action: { showingImagePicker = true }) {
+                            Label("从相册选择", systemImage: "photo.on.rectangle")
+                        }
+
+                        if filteredItems.count > 1 {
+                            Button(action: { 
+                                currentPlaybackIndex = 0
+                                showingPlayback = true 
+                            }) {
+                                Label("播放模式", systemImage: "play.circle")
+                            }
+                        }
+                        
+                        if !filteredItems.isEmpty {
+                            Button(role: .destructive, action: { showingDeleteAllAlert = true }) {
+                                Label("删除全部照片", systemImage: "trash")
+                            }
+                        }
+                        
+                        Button(action: { showingHelp = true }) {
+                            Label("帮助", systemImage: "questionmark.circle")
+                        }
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingCamera) {
+                CameraView()
+            }
+            .sheet(isPresented: $showingImagePicker) {
+                ImagePickerView { imageData in
+                    if let imageData = imageData {
+                        addItem(imageData: imageData)
+                    }
+                }
+            }
+            .fullScreenCover(isPresented: $showingPlayback) {
+                PlaybackView(items: filteredItems, currentIndex: $currentPlaybackIndex)
+            }
+            .sheet(isPresented: $showingDateFilter) {
+                DateFilterView(startDate: $startDate, endDate: $endDate)
+            }
+            .alert("删除全部照片", isPresented: $showingDeleteAllAlert) {
+                Button("取消", role: .cancel) { }
+                Button("删除", role: .destructive) {
+                    deleteAllItems()
+                }
+            } message: {
+                Text("确定要删除所有照片吗？此操作无法撤销。")
+            }
+            .sheet(isPresented: $showingHelp) {
+                HelpView()
+            }
+        }
+    }
+    
+    private func addItem(imageData: Data? = nil) {
         withAnimation {
-            let newItem = Item(timestamp: Date())
+            let newItem = Item(timestamp: Date(), imageData: imageData)
             modelContext.insert(newItem)
         }
     }
-
-    private func deleteItems(offsets: IndexSet) {
+    
+    private func deleteAllItems() {
         withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            for item in filteredItems {
+                modelContext.delete(item)
             }
         }
+    }
+    
+    private func scrollToItem(_ item: Item) {
+        withAnimation {
+            scrollProxy?.scrollTo(item.id, anchor: .center)
+        }
+    }
+}
+
+struct DateFilterView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var startDate: Date
+    @Binding var endDate: Date
+    
+    private let calendar = Calendar.current
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("快捷选择")) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            QuickDateButton(title: "今天", action: {
+                                startDate = calendar.startOfDay(for: Date())
+                                endDate = calendar.endOfDay(for: Date())
+                            })
+                            
+                            QuickDateButton(title: "昨天", action: {
+                                let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) ?? Date()
+                                startDate = calendar.startOfDay(for: yesterday)
+                                endDate = calendar.endOfDay(for: yesterday)
+                            })
+                            
+                            QuickDateButton(title: "前天", action: {
+                                let dayBeforeYesterday = calendar.date(byAdding: .day, value: -2, to: Date()) ?? Date()
+                                startDate = calendar.startOfDay(for: dayBeforeYesterday)
+                                endDate = calendar.endOfDay(for: dayBeforeYesterday)
+                            })
+                            
+                            QuickDateButton(title: "当月", action: {
+                                let components = calendar.dateComponents([.year, .month], from: Date())
+                                startDate = calendar.date(from: components) ?? Date()
+                                endDate = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startDate) ?? Date()
+                            })
+                            
+                            QuickDateButton(title: "当季度", action: {
+                                let components = calendar.dateComponents([.year], from: Date())
+                                let year = components.year ?? calendar.component(.year, from: Date())
+                                let quarter = (calendar.component(.month, from: Date()) - 1) / 3
+                                startDate = calendar.date(from: DateComponents(year: year, month: quarter * 3 + 1)) ?? Date()
+                                endDate = calendar.date(byAdding: DateComponents(month: 3, day: -1), to: startDate) ?? Date()
+                            })
+                            
+                            QuickDateButton(title: "当年", action: {
+                                let components = calendar.dateComponents([.year], from: Date())
+                                startDate = calendar.date(from: components) ?? Date()
+                                endDate = calendar.date(byAdding: DateComponents(year: 1, day: -1), to: startDate) ?? Date()
+                            })
+                        }
+                        .padding(.horizontal)
+                    }
+                    .frame(height: 44)
+                }
+                
+                Section(header: Text("自定义日期")) {
+                    DatePicker("开始日期", selection: $startDate, displayedComponents: .date)
+                    DatePicker("结束日期", selection: $endDate, displayedComponents: .date)
+                }
+            }
+            .navigationTitle("日期筛选")
+            .navigationBarItems(trailing: Button("完成") {
+                dismiss()
+            })
+        }
+    }
+}
+
+struct QuickDateButton: View {
+    let title: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline)
+                .foregroundColor(.blue)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(8)
+        }
+    }
+}
+
+extension Calendar {
+    func startOfDay(for date: Date) -> Date {
+        let components = dateComponents([.year, .month, .day], from: date)
+        return self.date(from: components) ?? date
+    }
+    
+    func endOfDay(for date: Date) -> Date {
+        var components = DateComponents()
+        components.day = 1
+        components.second = -1
+        return self.date(byAdding: components, to: startOfDay(for: date)) ?? date
+    }
+}
+
+struct ImagePickerView: UIViewControllerRepresentable {
+    @Environment(\.presentationMode) private var presentationMode
+    let onImageDataSelected: (Data?) -> Void
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = .photoLibrary
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePickerView
+        
+        init(_ parent: ImagePickerView) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                if let imageData = image.jpegData(compressionQuality: 0.8) {
+                    parent.onImageDataSelected(imageData)
+                } else {
+                    parent.onImageDataSelected(nil)
+                }
+            } else {
+                parent.onImageDataSelected(nil)
+            }
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+    }
+}
+
+struct PhotoCard: View {
+    let item: Item
+    @Environment(\.modelContext) private var modelContext
+    @State private var showingDeleteAlert = false
+    @State private var showingFullScreen = false
+    @State private var showingSaveSuccess = false
+    @State private var showingQuickActions = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let imageData = item.imageData,
+               let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 300)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .onTapGesture {
+                        showingFullScreen = true
+                    }
+                    .onLongPressGesture(minimumDuration: 0.5) {
+                        showingQuickActions = true
+                    }
+                    .confirmationDialog("快速操作", isPresented: $showingQuickActions) {
+                        Button("保存到相册") {
+                            UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
+                            showingSaveSuccess = true
+                        }
+                        
+                        Button("删除照片", role: .destructive) {
+                            showingDeleteAlert = true
+                        }
+                        
+                        Button("取消", role: .cancel) { }
+                    }
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(height: 300)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay {
+                        Image(systemName: "photo")
+                            .font(.largeTitle)
+                            .foregroundColor(.gray)
+                    }
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(item.timestamp, format: .dateTime)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("save")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                        .onTapGesture {
+                            if let imageData = item.imageData,
+                               let uiImage = UIImage(data: imageData) {
+                                UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
+                                showingSaveSuccess = true
+                            }
+                        }
+                    Text("del")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .onTapGesture {
+                            showingDeleteAlert = true
+                        }
+                }
+                
+                if let note = item.note, !note.isEmpty {
+                    Text(note)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+        .alert("删除照片", isPresented: $showingDeleteAlert) {
+            Button("取消", role: .cancel) { }
+            Button("删除", role: .destructive) {
+                modelContext.delete(item)
+            }
+        } message: {
+            Text("确定要删除这张照片吗？")
+        }
+        .alert("保存成功", isPresented: $showingSaveSuccess) {
+            Button("确定", role: .cancel) { }
+        } message: {
+            Text("照片已保存到相册")
+        }
+        .fullScreenCover(isPresented: $showingFullScreen) {
+            if let imageData = item.imageData,
+               let uiImage = UIImage(data: imageData) {
+                ImageDetailView(image: uiImage, item: item)
+            }
+        }
+    }
+}
+
+struct HelpView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Group {
+                        Text("如何拍出合适的照片")
+                            .font(.title)
+                            .bold()
+                        
+                        Text("1. 位置选择")
+                            .font(.headline)
+                        Text("• 选择固定的拍摄位置，保持每天在同一位置拍摄\n• 确保背景简洁，避免杂乱\n• 选择有特色的背景，如窗户、墙面等\n• 保持拍摄距离一致")
+                        
+                        Text("2. 动作姿势")
+                            .font(.headline)
+                        Text("• 保持自然放松的姿势\n• 可以尝试不同的动作，但建议每天保持相似\n• 注意保持身体姿态的一致性\n• 可以加入一些手势或道具增加趣味性")
+                        
+                        Text("3. 光线控制")
+                            .font(.headline)
+                        Text("• 选择光线充足的时间段\n• 避免强烈的直射光\n• 注意光线的方向，建议使用侧光或柔和的自然光\n• 保持每天拍摄时间相近，确保光线条件一致")
+                    }
+                    
+                    Group {
+                        Text("4. 拍摄技巧")
+                            .font(.headline)
+                        Text("• 使用手机支架保持稳定\n• 开启网格线辅助构图\n• 注意保持画面水平\n• 可以尝试不同的拍摄角度")
+                        
+                        Text("5. 注意事项")
+                            .font(.headline)
+                        Text("• 确保拍摄环境整洁\n• 注意服装搭配的协调性\n• 保持心情愉悦，展现真实的自己\n• 记录下每天的变化和进步")
+                    }
+                }
+                .padding()
+            }
+            .navigationBarItems(trailing: Button("完成") {
+                dismiss()
+            })
+        }
+    }
+}
+
+
+struct PlaybackView: View {
+    let items: [Item]
+    @Binding var currentIndex: Int
+    @Environment(\.dismiss) private var dismiss
+    @State private var isPlaying = false
+    @State private var preloadedImages: [UIImage] = []
+    @State private var timer: Timer?
+    
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            
+            if !preloadedImages.isEmpty {
+                Image(uiImage: preloadedImages[currentIndex])
+                    .resizable()
+                    .scaledToFit()
+            }
+            
+            VStack {
+                HStack {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.title)
+                            .foregroundColor(.white)
+                            .padding()
+                    }
+                    Spacer()
+                }
+                Spacer()
+                
+                // 底部控制栏
+                HStack(spacing: 10) {
+                    // 播放/暂停按钮
+                    Button(action: {
+                        if isPlaying {
+                            timer?.invalidate()
+                            timer = nil
+                        } else {
+                            startTimer()
+                        }
+                        isPlaying.toggle()
+                    }) {
+                        Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.white)
+                            .padding()
+                    }
+                    
+                    // 拖动条
+                    Slider(value: Binding(
+                        get: { Double(currentIndex) },
+                        set: { newValue in
+                            currentIndex = Int(newValue)
+                            if isPlaying {
+                                timer?.invalidate()
+                                startTimer()
+                            }
+                        }
+                    ), in: 0...Double(items.count - 1), step: 1)
+                    .padding(.horizontal)
+                    
+                    // 当前索引显示
+                    Text("\(currentIndex + 1) / \(items.count)")
+                        .foregroundColor(.white)
+                        .font(.caption)
+                        .padding(.horizontal)
+                }
+                .padding(.bottom, 20)
+            }
+        }
+        .onAppear {
+            preloadImages()
+        }
+        .onDisappear {
+            timer?.invalidate()
+            timer = nil
+        }
+    }
+    
+    private func preloadImages() {
+        preloadedImages = []
+        for item in items {
+            if let imageData = item.imageData,
+               let image = UIImage(data: imageData) {
+                preloadedImages.append(image)
+            }
+        }
+    }
+    
+    private func startTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { _ in
+            currentIndex = (currentIndex + 1) % items.count
+        }
+    }
+}
+
+// 添加图片缩放扩展
+extension UIImage {
+    func scaled(to size: CGSize) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in
+            self.draw(in: CGRect(origin: .zero, size: size))
+        }
+    }
+}
+
+extension Array {
+    subscript(safe index: Int) -> Element? {
+        return indices.contains(index) ? self[index] : nil
     }
 }
 
