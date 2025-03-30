@@ -255,11 +255,11 @@ struct ContentView: View {
             .sheet(isPresented: $showingDateFilter) {
                 DateFilterView(startDate: $startDate, endDate: $endDate)
             }
-            .alert("删除全部照片", isPresented: $showingDeleteAllAlert) {
-                Button("取消", role: .cancel) { }
+            .confirmationDialog("删除全部照片", isPresented: $showingDeleteAllAlert) {
                 Button("删除", role: .destructive) {
                     deleteAllItems()
                 }
+                Button("取消", role: .cancel) { }
             } message: {
                 Text("确定要删除所有照片吗？此操作无法撤销。")
             }
@@ -365,24 +365,6 @@ extension Array {
     }
 }
 
-struct TagButton: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(isSelected ? Color.blue : Color.gray.opacity(0.3))
-                .cornerRadius(8)
-//                .foregroundColor(.white)
-        }
-    }
-}
 
 #Preview {
     ContentView()

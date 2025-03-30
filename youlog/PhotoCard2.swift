@@ -11,6 +11,8 @@ struct PhotoCard2: View {
     @State private var editedNote: String = ""
     @State private var showingTagEditor = false
     @State private var selectedTag: String?
+    @State private var isDeleting = false
+    @State private var showingDeleteAnimation = false
     
     init(item: Item) {
         self.item = item
@@ -20,32 +22,18 @@ struct PhotoCard2: View {
     var body: some View {
         NavigationStack {
             HStack(spacing: 0) {
-                if let imageData = item.imageData,
-                   let uiImage = UIImage(data: imageData) {
+                if showingDeleteAnimation, let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
+                    DeleteAnimationView(image: uiImage, isAnimating: $isDeleting) {
+                        modelContext.delete(item)
+                    }
+                } else if let imageData = item.imageData,
+                          let uiImage = UIImage(data: imageData) {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFit()
                         .frame(maxWidth: .infinity)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay(alignment: .bottom) {
-                            if let note = item.note, !note.isEmpty {
-                                VStack {
-                                    Spacer()
-                                    ZStack {
-                                        Text(note)
-                                            .font(.caption)
-                                            .foregroundColor(.white)
-                                            .padding(8)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .background(Color.black.opacity(0.5))
-                                            .cornerRadius(8)
-                                    }.onTapGesture {
-                                        DispatchQueue.main.async {
-                                            showingNoteEditor = true
-                                        }
-                                    }
-                                }
-                            }
                         }
                         .onTapGesture {
                             DispatchQueue.main.async {
@@ -75,6 +63,7 @@ struct PhotoCard2: View {
                         }
                 }
                 
+                // 日期 时间
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         
@@ -83,43 +72,73 @@ struct PhotoCard2: View {
                             formatter.dateFormat = "MM/dd"
                             return formatter
                         }
-                        
+
                         Text(item.timestamp, formatter: dateFormatter1)
-                            .font(.body)
-                            .bold()
+                            .font(.system(size: 18, weight: .bold)) // Custom font size
                             .foregroundColor(.secondary)
-                        
+
                         var dateFormatter2: DateFormatter {
                             let formatter = DateFormatter()
                             formatter.dateFormat = "HH:mm"
                             return formatter
                         }
-                        Text(item.timestamp, formatter: dateFormatter2)
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
 
+                        Text(item.timestamp, formatter: dateFormatter2)
+                            .font(.system(size: 18)) // Custom font size
+                            .foregroundColor(.primary)
                     }
                     .padding( 4)
-                        Button(action: {
-                            selectedTag = item.tag
-                            showingTagEditor = true
-                        }) {
-                            Text(item.tag ?? "全部")
-                                .font(.body)
-                                .foregroundColor(.primary)
-                                .padding(2)
-                                .background(.indigo.opacity(0.1))
-                                .cornerRadius(4)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 2)
-                                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                                )
-
-                        }
+                    // 星期几
+                    var dayOfWeekFormatter: DateFormatter {
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = "EEEE" // Day of the week
+                        return formatter
+                    }
+                    Text(item.timestamp, formatter: dayOfWeekFormatter)
+                        .font(.body) // Custom font size
+                        .foregroundColor(.primary)
                         .padding( 4)
-                        
+                    
+                    //tag
+                    Button(action: {
+                        selectedTag = item.tag
+                        showingTagEditor = true
+                    }) {
+                        Text(item.tag ?? "全部")
+                            .font(.body)
+                            .foregroundColor(.primary)
+                            .padding(2)
+                            .background(.indigo.opacity(0.1))
+                            .cornerRadius(4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 2)
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                            )
+
+                    }.padding( 4)
+                    //note
+                    if let note = item.note, !note.isEmpty {
+                        VStack {
+                            ZStack {
+                                Text(note)
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(8)
+                                    .padding( 4)
+                                
+                                Spacer()
+                            }
+                            .padding( 4)
+                            .onTapGesture {
+                                DispatchQueue.main.async {
+                                    showingNoteEditor = true
+                                }
+                            }
+                        }
+                    }
+                    
                     Spacer()
+
                     HStack{
                         
                         Menu {
@@ -147,7 +166,7 @@ struct PhotoCard2: View {
             .alert("删除照片", isPresented: $showingDeleteAlert) {
                 Button("取消", role: .cancel) { }
                 Button("删除", role: .destructive) {
-                    modelContext.delete(item)
+                    showingDeleteAnimation = true
                 }
             } message: {
                 Text("确定要删除这张照片吗？")
@@ -172,56 +191,11 @@ struct PhotoCard2: View {
             .sheet(isPresented: $showingNoteEditor) {
                 NoteEditorView(note: $editedNote)
                     .onAppear {
-                        editedNote = item.note ?? "没有吗？"
+                        editedNote = item.note ?? ""
                     }
                     .onDisappear {
                         item.note = editedNote
                     }
-            }
-        }
-    }
-    
-    // 共享的菜单内容视图
-    struct MenuContent: View {
-        let uiImage: UIImage
-        let item: Item
-        @Binding var selectedTag: String?
-        @Binding var editedNote: String
-        @Binding var showingDeleteAlert: Bool
-        @Binding var showingSaveSuccess: Bool
-        @Binding var showingTagEditor: Bool
-        @Binding var showingNoteEditor: Bool
-        
-        var body: some View {
-            Button(action: {
-                DispatchQueue.global(qos: .background).async {
-                    UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
-                    DispatchQueue.main.async {
-                        showingSaveSuccess = true
-                    }
-                }
-            }) {
-                Label("保存到相册", systemImage: "square.and.arrow.down")
-            }
-            
-            Button(action: {
-                selectedTag = item.tag
-                showingTagEditor = true
-            }) {
-                Label("编辑标签", systemImage: "tag")
-            }
-            
-            Button(action: {
-                editedNote = item.note ?? ""
-                showingNoteEditor = true
-            }) {
-                Label("编辑笔记", systemImage: "pencil")
-            }
-            
-            Button(role: .destructive, action: {
-                showingDeleteAlert = true
-            }) {
-                Label("删除照片", systemImage: "trash")
             }
         }
     }
