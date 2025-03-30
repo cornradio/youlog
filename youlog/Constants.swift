@@ -7,8 +7,20 @@ class TagManager: ObservableObject {
         }
     }
     
+    private let defaultTags = ["全部", "脸型", "身体", "宠物" ,"食物", "生活", "车子", "灵感"]
+    
     init() {
-        self.availableTags = UserDefaults.standard.stringArray(forKey: "availableTags") ?? ["全部"]
+        // 检查是否是首次安装
+        let isFirstLaunch = !UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
+        
+        if isFirstLaunch {
+            // 首次安装，使用默认标签
+            self.availableTags = defaultTags.sorted()
+            UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
+        } else {
+            // 非首次安装，只使用保存的标签
+            self.availableTags = UserDefaults.standard.stringArray(forKey: "availableTags") ?? ["全部"]
+        }
     }
     
     func addTag(_ tag: String) {

@@ -73,6 +73,7 @@ private struct CameraOverlayView: View {
 private struct TopToolbarView: View {
     let camera: CameraModel
     let dismiss: DismissAction
+    @State private var showingDelayPicker = false
     
     var body: some View {
         HStack {
@@ -81,6 +82,24 @@ private struct TopToolbarView: View {
                     .font(.title2)
                     .foregroundColor(.white)
                     .padding()
+            }
+            
+            Button(action: { showingDelayPicker = true }) {
+                HStack {
+                    Image(systemName: "timer")
+                    if camera.isCountingDown {
+                        Text("\(camera.countdownNumber)")
+                            .foregroundColor(.white)
+                            .background(Color.blue)
+                            .cornerRadius(10)
+                            .padding(.horizontal, 10)
+                    } else {
+                        Text(camera.delaySeconds > 0 ? "\(camera.delaySeconds)s" : "")
+                    }
+                }
+                .font(.title2)
+                .foregroundColor(.white)
+                .padding()
             }
             
             Spacer()
@@ -98,6 +117,14 @@ private struct TopToolbarView: View {
                     .foregroundColor(.white)
                     .padding()
             }
+        }
+        .confirmationDialog("选择延迟时间", isPresented: $showingDelayPicker) {
+            ForEach([0, 3, 5, 10], id: \.self) { seconds in
+                Button("\(seconds)秒") {
+                    camera.delaySeconds = seconds
+                }
+            }
+            Button("取消", role: .cancel) {}
         }
     }
 }
@@ -155,6 +182,25 @@ class CameraModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
     @Published var output = AVCapturePhotoOutput()
     @Published var preview: AVCaptureVideoPreviewLayer!
     @Published var isFlashOn = false
+    @Published var delaySeconds: Int = 0 {
+        didSet {
+            UserDefaults.standard.set(delaySeconds, forKey: "cameraDelaySeconds")
+        }
+    }
+    @Published var isCountingDown = false
+    @Published var countdownNumber: Int = 0
+    @Published var isFrontCamera: Bool = false {
+        didSet {
+            UserDefaults.standard.set(isFrontCamera, forKey: "cameraIsFront")
+        }
+    }
+    
+    override init() {
+        super.init()
+        // 从 UserDefaults 读取保存的设置
+        delaySeconds = UserDefaults.standard.integer(forKey: "cameraDelaySeconds")
+        isFrontCamera = UserDefaults.standard.bool(forKey: "cameraIsFront")
+    }
     
     func checkPermissions() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
@@ -182,8 +228,9 @@ class CameraModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
         do {
             self.session.beginConfiguration()
             
-            // 默认使用后置摄像头
-            let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+            // 使用保存的摄像头方向
+            let position: AVCaptureDevice.Position = isFrontCamera ? .front : .back
+            let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
             let input = try AVCaptureDeviceInput(device: device!)
             
             if self.session.canAddInput(input) {
@@ -206,6 +253,30 @@ class CameraModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
     }
     
     func takePicture() {
+        if delaySeconds > 0 {
+            isCountingDown = true
+            countdownNumber = delaySeconds
+            
+            Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
+                }
+                
+                if self.countdownNumber > 0 {
+                    self.countdownNumber -= 1
+                } else {
+                    timer.invalidate()
+                    self.isCountingDown = false
+                    self.capturePhoto()
+                }
+            }
+        } else {
+            capturePhoto()
+        }
+    }
+    
+    private func capturePhoto() {
         let settings = AVCapturePhotoSettings()
         settings.flashMode = isFlashOn ? .on : .off
         DispatchQueue.global(qos: .background).async {
@@ -228,8 +299,9 @@ class CameraModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
         guard let currentInput = session.inputs.first as? AVCaptureDeviceInput else { return }
         session.removeInput(currentInput)
         
-        // 切换相机位置
-        let newPosition: AVCaptureDevice.Position = currentInput.device.position == .back ? .front : .back
+        // 切换相机位置并更新状态
+        isFrontCamera.toggle()
+        let newPosition: AVCaptureDevice.Position = isFrontCamera ? .front : .back
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition) else { return }
         
         do {
