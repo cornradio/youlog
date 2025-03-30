@@ -11,8 +11,6 @@ struct PhotoCard2: View {
     @State private var editedNote: String = ""
     @State private var showingTagEditor = false
     @State private var selectedTag: String?
-    @State private var isDeleting = false
-    @State private var showingDeleteAnimation = false
     
     init(item: Item) {
         self.item = item
@@ -22,12 +20,8 @@ struct PhotoCard2: View {
     var body: some View {
         NavigationStack {
             HStack(spacing: 0) {
-                if showingDeleteAnimation, let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
-                    DeleteAnimationView(image: uiImage, isAnimating: $isDeleting) {
-                        modelContext.delete(item)
-                    }
-                } else if let imageData = item.imageData,
-                          let uiImage = UIImage(data: imageData) {
+                if let imageData = item.imageData,
+                   let uiImage = UIImage(data: imageData) {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFit()
@@ -166,7 +160,7 @@ struct PhotoCard2: View {
             .alert("删除照片", isPresented: $showingDeleteAlert) {
                 Button("取消", role: .cancel) { }
                 Button("删除", role: .destructive) {
-                    showingDeleteAnimation = true
+                    modelContext.delete(item)
                 }
             } message: {
                 Text("确定要删除这张照片吗？")

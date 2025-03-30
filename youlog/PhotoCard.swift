@@ -122,8 +122,6 @@ struct PhotoCard: View {
     @State private var showingTagEditor = false
     @State private var selectedTag: String?
     @State private var isMenuEnabled = true
-    @State private var isDeleting = false
-    @State private var showingDeleteAnimation = false
     
     init(item: Item) {
         self.item = item
@@ -133,34 +131,27 @@ struct PhotoCard: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 8) {
-                if showingDeleteAnimation, let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
-                    DeleteAnimationView(image: uiImage, isAnimating: $isDeleting) {
-                        modelContext.delete(item)
+                PhotoImageView(
+                    imageData: item.imageData,
+                    note: item.note,
+                    onTap: { showingFullScreen = true },
+                    onLongPress: { showingQuickActions = true },
+                    onNoteTap: { showingNoteEditor = true }
+                )
+                .contextMenu {
+                    if let imageData = item.imageData,
+                       let uiImage = UIImage(data: imageData) {
+                        MenuContent(
+                            uiImage: uiImage,
+                            item: item,
+                            selectedTag: $selectedTag,
+                            editedNote: $editedNote,
+                            showingDeleteAlert: $showingDeleteAlert,
+                            showingSaveSuccess: $showingSaveSuccess,
+                            showingTagEditor: $showingTagEditor,
+                            showingNoteEditor: $showingNoteEditor
+                        )
                     }
-                } else {
-                    PhotoImageView(
-                        imageData: item.imageData,
-                        note: item.note,
-                        onTap: { showingFullScreen = true },
-                        onLongPress: { showingQuickActions = true },
-                        onNoteTap: { showingNoteEditor = true }
-                    )
-                    .contextMenu {
-                        if let imageData = item.imageData,
-                           let uiImage = UIImage(data: imageData) {
-                            MenuContent(
-                                uiImage: uiImage,
-                                item: item,
-                                selectedTag: $selectedTag,
-                                editedNote: $editedNote,
-                                showingDeleteAlert: $showingDeleteAlert,
-                                showingSaveSuccess: $showingSaveSuccess,
-                                showingTagEditor: $showingTagEditor,
-                                showingNoteEditor: $showingNoteEditor
-                            )
-                        }
-                }
-
                 }
                 
                 HStack {
@@ -195,7 +186,7 @@ struct PhotoCard: View {
             .alert("删除照片", isPresented: $showingDeleteAlert) {
                 Button("取消", role: .cancel) { }
                 Button("删除", role: .destructive) {
-                    showingDeleteAnimation = true
+                    modelContext.delete(item)
                 }
             } message: {
                 Text("确定要删除这张照片吗？")
