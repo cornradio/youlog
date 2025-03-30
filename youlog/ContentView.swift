@@ -106,6 +106,7 @@ struct ContentView: View {
     @State private var showingDeleteAllAlert = false
     @State private var showingHelp = false
     @State private var selectedTag: String? = nil
+    @State private var showingTagEditor = false
     @AppStorage("isGridView") private var isGridView = true  // 使用 @AppStorage 替代 @State
     
     enum TimeRange {
@@ -157,6 +158,14 @@ struct ContentView: View {
                                     }
                                 }
                             }
+                        }
+                        
+                        Divider()
+                        
+                        Button(action: {
+                            showingTagEditor = true
+                        }) {
+                            Label("编辑标签", systemImage: "pencil")
                         }
                     } label: {
                         HStack {
@@ -265,6 +274,9 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingHelp) {
                 HelpView()
+            }
+            .sheet(isPresented: $showingTagEditor) {
+                TagEditorView(selectedTag: $selectedTag)
             }
         }
     }
