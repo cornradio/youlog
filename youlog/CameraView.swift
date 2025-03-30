@@ -41,14 +41,40 @@ struct CameraView: View {
 // 相机预览视图
 private struct CameraPreviewView: View {
     let camera: CameraModel
+    @State private var orientation: UIDeviceOrientation = .portrait
+    @State private var previewSize: CGSize = UIScreen.main.bounds.size
     
     var body: some View {
         ZStack {
             CameraPreview(camera: camera)
                 .ignoresSafeArea()
+                .rotationEffect(rotationAngle, anchor: .center)
             
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
+        }
+        .onAppear {
+            orientation = UIDevice.current.orientation
+            previewSize = UIScreen.main.bounds.size
+        }
+        .onRotate { newOrientation in
+            orientation = newOrientation
+           previewSize = UIScreen.main.bounds.size
+        }
+    }
+    
+    private var rotationAngle: Angle {
+        switch orientation {
+        case .portrait:
+            return .degrees(0)
+        case .portraitUpsideDown:
+            return .degrees(180)
+        case .landscapeLeft:
+            return .degrees(-90)
+        case .landscapeRight:
+            return .degrees(90)
+        default:
+            return .degrees(0)
         }
     }
 }
@@ -119,7 +145,7 @@ private struct TopToolbarView: View {
             }
         }
         .confirmationDialog("选择延迟时间", isPresented: $showingDelayPicker) {
-            ForEach([0, 3, 5, 10], id: \.self) { seconds in
+            ForEach([0, 3, 5, 10,15], id: \.self) { seconds in
                 Button("\(seconds)秒") {
                     camera.delaySeconds = seconds
                 }
@@ -334,6 +360,9 @@ struct CameraPreview: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: UIView, context: Context) {
+        DispatchQueue.main.async {
+            camera.preview.frame = uiView.frame
+        }
     }
 }
 
@@ -352,6 +381,25 @@ struct TagButtonCam: View {
                 .foregroundColor(isSelected ? .white : .white)
                 .cornerRadius(20)
         }
+    }
+}
+
+// 添加屏幕旋转监听扩展
+extension View {
+    func onRotate(perform action: @escaping (UIDeviceOrientation) -> Void) -> some View {
+        self.modifier(DeviceRotationViewModifier(action: action))
+    }
+}
+
+struct DeviceRotationViewModifier: ViewModifier {
+    let action: (UIDeviceOrientation) -> Void
+    
+    func body(content: Content) -> some View {
+        content
+            .onAppear()
+            .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+                action(UIDevice.current.orientation)
+            }
     }
 }
 
