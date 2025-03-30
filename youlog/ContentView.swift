@@ -197,7 +197,7 @@ struct ContentView: View {
                     }
                 }
             }
-            .navigationTitle("记录你的变化")
+            .navigationTitle(selectedTag == nil ? "记录你的全部" : "记录你的\(selectedTag ?? "")")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack {
