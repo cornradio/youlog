@@ -222,34 +222,4 @@ struct PhotoCard: View {
         }
     }
     
-    struct TagEditorView: View {
-        @Binding var selectedTag: String?
-        @Environment(\.dismiss) private var dismiss
-        
-        var body: some View {
-            NavigationView {
-                List {
-                    ForEach(AppConstants.availableTags, id: \.self) { tag in
-                        Button(action: {
-                            selectedTag = tag == "全部" ? nil : tag
-                            dismiss()
-                        }) {
-                            HStack {
-                                Text(tag)
-                                Spacer()
-                                if (selectedTag == nil && tag == "全部") || selectedTag == tag {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.blue)
-                                }
-                            }
-                        }
-                    }
-                }
-                .navigationTitle("选择标签")
-                .navigationBarItems(trailing: Button("取消") {
-                    dismiss()
-                })
-            }
-        }
-    }
-
+   

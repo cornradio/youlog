@@ -9,76 +9,8 @@ struct CameraView: View {
     
     var body: some View {
         ZStack {
-            // 相机预览
-            CameraPreview(camera: camera)
-                .ignoresSafeArea()
-            
-            // 半透明遮罩
-            Color.black.opacity(0.3)
-                .ignoresSafeArea()
-            
-            VStack {
-                // 顶部工具栏
-                HStack {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .padding()
-                    }
-                    
-                    Spacer()
-                    
-                    Button(action: { camera.switchCamera() }) {
-                        Image(systemName: "camera.rotate")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .padding()
-                    }
-                    
-                    Button(action: { camera.toggleFlash() }) {
-                        Image(systemName: camera.isFlashOn ? "bolt.fill" : "bolt.slash.fill")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .padding()
-                    }
-                }
-                
-                // 标签选择器
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(AppConstants.availableTags, id: \.self) { tag in
-                            TagButtonCam(
-                                title: tag,
-                                isSelected: selectedTag == nil ? tag == "全部" : selectedTag == tag,
-                                action: {
-                                    selectedTag = tag == "全部" ? nil : tag
-                                }
-                            )
-                        }
-                    }
-                    .padding()
-                }
-                
-                Spacer()
-                
-                // 底部控制栏
-                VStack(spacing: 20) {
-                    // 拍摄按钮
-                    Button(action: { camera.takePicture() }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 75, height: 75)
-                            
-                            Circle()
-                                .stroke(Color.white, lineWidth: 2)
-                                .frame(width: 85, height: 85)
-                        }
-                    }
-                    .padding(.bottom, 30)
-                }
-            }
+            CameraPreviewView(camera: camera)
+            CameraOverlayView(camera: camera, selectedTag: $selectedTag, dismiss: dismiss)
         }
         .onAppear {
             camera.checkPermissions()
@@ -102,6 +34,115 @@ struct CameraView: View {
             }
         } message: {
             Text("请在设置中允许访问相机")
+        }
+    }
+}
+
+// 相机预览视图
+private struct CameraPreviewView: View {
+    let camera: CameraModel
+    
+    var body: some View {
+        ZStack {
+            CameraPreview(camera: camera)
+                .ignoresSafeArea()
+            
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+        }
+    }
+}
+
+// 相机覆盖视图
+private struct CameraOverlayView: View {
+    let camera: CameraModel
+    @Binding var selectedTag: String?
+    let dismiss: DismissAction
+    
+    var body: some View {
+        VStack {
+            TopToolbarView(camera: camera, dismiss: dismiss)
+            TagSelectorView(selectedTag: $selectedTag)
+            Spacer()
+            BottomControlView(camera: camera)
+        }
+    }
+}
+
+// 顶部工具栏视图
+private struct TopToolbarView: View {
+    let camera: CameraModel
+    let dismiss: DismissAction
+    
+    var body: some View {
+        HStack {
+            Button(action: { dismiss() }) {
+                Image(systemName: "xmark")
+                    .font(.title2)
+                    .foregroundColor(.white)
+                    .padding()
+            }
+            
+            Spacer()
+            
+            Button(action: { camera.switchCamera() }) {
+                Image(systemName: "camera.rotate")
+                    .font(.title2)
+                    .foregroundColor(.white)
+                    .padding()
+            }
+            
+            Button(action: { camera.toggleFlash() }) {
+                Image(systemName: camera.isFlashOn ? "bolt.fill" : "bolt.slash.fill")
+                    .font(.title2)
+                    .foregroundColor(.white)
+                    .padding()
+            }
+        }
+    }
+}
+
+// 标签选择器视图
+private struct TagSelectorView: View {
+    @Binding var selectedTag: String?
+    @StateObject private var tagManager = AppConstants.tagManager
+    
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(tagManager.availableTags, id: \.self) { tag in
+                    TagButtonCam(
+                        title: tag,
+                        isSelected: selectedTag == nil ? tag == "全部" : selectedTag == tag,
+                        action: {
+                            selectedTag = tag == "全部" ? nil : tag
+                        }
+                    )
+                }
+            }
+            .padding()
+        }
+    }
+}
+
+// 底部控制视图
+private struct BottomControlView: View {
+    let camera: CameraModel
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Button(action: { camera.takePicture() }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 75, height: 75)
+                    
+                    Circle()
+                        .stroke(Color.white, lineWidth: 2)
+                        .frame(width: 85, height: 85)
+                }
+            }
+            .padding(.bottom, 30)
         }
     }
 }
