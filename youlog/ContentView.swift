@@ -91,6 +91,7 @@ struct PhotoTimelineView2: View {
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
+    @StateObject private var tagManager = AppConstants.tagManager
     @State private var showingCamera = false
     @State private var selectedTimeRange: TimeRange = .day
     @State private var selectedDate = Date()
@@ -147,7 +148,7 @@ struct ContentView: View {
                     Spacer()
                     
                     Menu {
-                        ForEach(AppConstants.availableTags, id: \.self) { tag in
+                        ForEach(tagManager.availableTags, id: \.self) { tag in
                             Button(action: {
                                 selectedTag = tag == "全部" ? nil : tag
                             }) {
