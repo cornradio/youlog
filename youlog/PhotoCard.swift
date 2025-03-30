@@ -41,6 +41,7 @@ struct PhotoCard: View {
                                                 .padding(8)
                                                 .frame(maxWidth: .infinity, alignment: .leading)
                                                 .background(Color.black.opacity(0.5))
+                                                .cornerRadius(8)
                                         }.onTapGesture {
                                             DispatchQueue.main.async {
                                                 showingNoteEditor = true

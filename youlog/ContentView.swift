@@ -53,6 +53,41 @@ struct PhotoTimelineView: View {
     }
 }
 
+struct PhotoTimelineView2: View {
+    let items: [Item]
+    @Binding var selectedDate: Date
+    let scrollToItem: (Item) -> Void
+    @State private var isFirstAppear = true
+    
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 16) {
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                        PhotoCard2(item: item)
+                            .id(item.id)
+                            .frame(maxWidth: UIScreen.main.bounds.width * 0.85)
+                            .frame(maxWidth: .infinity)
+                            .onTapGesture {
+                                withAnimation {
+                                    selectedDate = item.timestamp
+                                    scrollToItem(item)
+                                }
+                            }
+                    }
+                }
+                .padding()
+            }
+            .onAppear {
+                if isFirstAppear {
+                    proxy.scrollTo(items.first?.id, anchor: .top)
+                    isFirstAppear = false
+                }
+            }
+        }
+    }
+}
+
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
@@ -71,6 +106,7 @@ struct ContentView: View {
     @State private var showingDeleteAllAlert = false
     @State private var showingHelp = false
     @State private var selectedTag: String? = nil
+    @AppStorage("isGridView") private var isGridView = true  // 使用 @AppStorage 替代 @State
     
     enum TimeRange {
         case day, week, month
@@ -146,45 +182,60 @@ struct ContentView: View {
                 .padding()
                 
                 HStack(spacing: 0) {
-                    PhotoTimelineView(
-                        items: filteredItems,
-                        selectedDate: $selectedDate,
-                        scrollToItem: scrollToItem
-                    )
+                    if isGridView {
+                        PhotoTimelineView(
+                            items: filteredItems,
+                            selectedDate: $selectedDate,
+                            scrollToItem: scrollToItem
+                        )
+                    } else {
+                        PhotoTimelineView2(
+                            items: filteredItems,
+                            selectedDate: $selectedDate,
+                            scrollToItem: scrollToItem
+                        )
+                    }
                 }
             }
             .navigationTitle("记录你的变化")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(action: { showingCamera = true }) {
-                            Label("拍照", systemImage: "camera")
-                        }
-
-                        Button(action: { showingImagePicker = true }) {
-                            Label("从相册选择", systemImage: "photo.on.rectangle")
-                        }
-
-                        if filteredItems.count > 1 {
-                            Button(action: { 
-                                currentPlaybackIndex = 0
-                                showingPlayback = true 
-                            }) {
-                                Label("播放模式", systemImage: "play.circle")
-                            }
+                    HStack {
+                        Button(action: { isGridView.toggle() }) {
+                            Image(systemName: isGridView ? "square.grid.2x2" : "square.fill.text.grid.1x2")
+                                .foregroundColor(.blue)
                         }
                         
-                        if !filteredItems.isEmpty {
-                            Button(role: .destructive, action: { showingDeleteAllAlert = true }) {
-                                Label("删除全部照片", systemImage: "trash")
+                        Menu {
+                            Button(action: { showingCamera = true }) {
+                                Label("拍照", systemImage: "camera")
                             }
+
+                            Button(action: { showingImagePicker = true }) {
+                                Label("从相册选择", systemImage: "photo.on.rectangle")
+                            }
+
+                            if filteredItems.count > 1 {
+                                Button(action: { 
+                                    currentPlaybackIndex = 0
+                                    showingPlayback = true 
+                                }) {
+                                    Label("播放模式", systemImage: "play.circle")
+                                }
+                            }
+                            
+                            if !filteredItems.isEmpty {
+                                Button(role: .destructive, action: { showingDeleteAllAlert = true }) {
+                                    Label("删除全部照片", systemImage: "trash")
+                                }
+                            }
+                            
+                            Button(action: { showingHelp = true }) {
+                                Label("帮助", systemImage: "questionmark.circle")
+                            }
+                        } label: {
+                            Image(systemName: "plus")
                         }
-                        
-                        Button(action: { showingHelp = true }) {
-                            Label("帮助", systemImage: "questionmark.circle")
-                        }
-                    } label: {
-                        Image(systemName: "plus")
                     }
                 }
             }
@@ -236,91 +287,6 @@ struct ContentView: View {
     private func scrollToItem(_ item: Item) {
         withAnimation {
             scrollProxy?.scrollTo(item.id, anchor: .center)
-        }
-    }
-}
-
-struct DateFilterView: View {
-    @Environment(\.dismiss) private var dismiss
-    @Binding var startDate: Date
-    @Binding var endDate: Date
-    
-    private let calendar = Calendar.current
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("快捷选择")) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            QuickDateButton(title: "今天", action: {
-                                startDate = calendar.startOfDay(for: Date())
-                                endDate = calendar.endOfDay(for: Date())
-                            })
-                            
-                            QuickDateButton(title: "昨天", action: {
-                                let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) ?? Date()
-                                startDate = calendar.startOfDay(for: yesterday)
-                                endDate = calendar.endOfDay(for: yesterday)
-                            })
-                            
-                            QuickDateButton(title: "前天", action: {
-                                let dayBeforeYesterday = calendar.date(byAdding: .day, value: -2, to: Date()) ?? Date()
-                                startDate = calendar.startOfDay(for: dayBeforeYesterday)
-                                endDate = calendar.endOfDay(for: dayBeforeYesterday)
-                            })
-                            
-                            QuickDateButton(title: "当月", action: {
-                                let components = calendar.dateComponents([.year, .month], from: Date())
-                                startDate = calendar.date(from: components) ?? Date()
-                                endDate = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startDate) ?? Date()
-                            })
-                            
-                            QuickDateButton(title: "当季度", action: {
-                                let components = calendar.dateComponents([.year], from: Date())
-                                let year = components.year ?? calendar.component(.year, from: Date())
-                                let quarter = (calendar.component(.month, from: Date()) - 1) / 3
-                                startDate = calendar.date(from: DateComponents(year: year, month: quarter * 3 + 1)) ?? Date()
-                                endDate = calendar.date(byAdding: DateComponents(month: 3, day: -1), to: startDate) ?? Date()
-                            })
-                            
-                            QuickDateButton(title: "当年", action: {
-                                let components = calendar.dateComponents([.year], from: Date())
-                                startDate = calendar.date(from: components) ?? Date()
-                                endDate = calendar.date(byAdding: DateComponents(year: 1, day: -1), to: startDate) ?? Date()
-                            })
-                        }
-                        .padding(.horizontal)
-                    }
-                    .frame(height: 44)
-                }
-                
-                Section(header: Text("自定义日期")) {
-                    DatePicker("开始日期", selection: $startDate, displayedComponents: .date)
-                    DatePicker("结束日期", selection: $endDate, displayedComponents: .date)
-                }
-            }
-            .navigationTitle("日期筛选")
-            .navigationBarItems(trailing: Button("完成") {
-                dismiss()
-            })
-        }
-    }
-}
-
-struct QuickDateButton: View {
-    let title: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.blue)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.blue.opacity(0.1))
-                .cornerRadius(8)
         }
     }
 }
@@ -382,7 +348,6 @@ struct ImagePickerView: UIViewControllerRepresentable {
     }
 }
 
-
 struct HelpView: View {
     @Environment(\.dismiss) private var dismiss
     
@@ -426,9 +391,6 @@ struct HelpView: View {
         }
     }
 }
-
-
-
 
 // 添加图片缩放扩展
 extension UIImage {
