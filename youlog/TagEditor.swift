@@ -15,14 +15,14 @@ struct TagEditorView: View {
                     ForEach(tagManager.availableTags, id: \.self) { tag in
                         Button(action: {
                             if editMode == .inactive {
-                                selectedTag = tag == "全部" ? nil : tag
+                                selectedTag = tagManager.isAllTag(tag) ? nil : tag
                                 dismiss()
                             }
                         }) {
                             HStack {
                                 Text(tag)
                                 Spacer()
-                                if (selectedTag == nil && tag == "全部") || selectedTag == tag {
+                                if (selectedTag == nil && tagManager.isAllTag(tag)) || selectedTag == tag {
                                     Image(systemName: "checkmark")
                                         .foregroundColor(.blue)
                                 }
@@ -44,15 +44,15 @@ struct TagEditorView: View {
                 // 底部提示信息
                 VStack(spacing: 8) {
                     Divider()
-                    Text("左滑删除，长按排序")
+                    Text(NSLocalizedString("swipe_to_delete", comment: ""))
                         .font(.caption)
                         .foregroundColor(.gray)
                         .padding(.bottom, 8)
                 }
             }
-            .navigationTitle("选择标签")
+            .navigationTitle(NSLocalizedString("select_tag", comment: ""))
             .navigationBarItems(
-                leading: Button("取消") {
+                leading: Button(NSLocalizedString("cancel", comment: "")) {
                     dismiss()
                 },
                 trailing: HStack {
@@ -67,14 +67,14 @@ struct TagEditorView: View {
             .sheet(isPresented: $showingAddTag) {
                 NavigationView {
                     Form {
-                        TextField("输入新标签", text: $newTag)
+                        TextField(NSLocalizedString("enter_new_tag", comment: ""), text: $newTag)
                     }
-                    .navigationTitle("添加标签")
+                    .navigationTitle(NSLocalizedString("add_tag", comment: ""))
                     .navigationBarItems(
-                        leading: Button("取消") {
+                        leading: Button(NSLocalizedString("cancel", comment: "")) {
                             showingAddTag = false
                         },
-                        trailing: Button("添加") {
+                        trailing: Button(NSLocalizedString("add", comment: "")) {
                             if !newTag.isEmpty {
                                 tagManager.addTag(newTag)
                                 newTag = ""

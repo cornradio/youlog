@@ -7,7 +7,15 @@ class TagManager: ObservableObject {
         }
     }
     
-    private let defaultTags = ["全部", "脸型", "身体", "宠物" ,"食物", "生活", "车子", "灵感"]
+    // 特殊标签的标识符 - 不要翻译这个字符串
+    private static let ALL_TAG_IDENTIFIER = "TAG_ALL"
+    
+    private static var defaultTags: [String] {
+        [
+            NSLocalizedString("all", comment: ""),
+            "脸型", "身体", "宠物", "食物", "生活", "车子", "灵感"
+        ]
+    }
     
     init() {
         // 检查是否是首次安装
@@ -15,12 +23,27 @@ class TagManager: ObservableObject {
         
         if isFirstLaunch {
             // 首次安装，使用默认标签
-            self.availableTags = defaultTags.sorted()
+            self.availableTags = TagManager.defaultTags.sorted()
             UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
         } else {
-            // 非首次安装，只使用保存的标签
-            self.availableTags = UserDefaults.standard.stringArray(forKey: "availableTags") ?? ["全部"]
+            // 非首次安装，加载保存的标签
+            let savedTags = UserDefaults.standard.stringArray(forKey: "availableTags") ?? [NSLocalizedString("all", comment: "")]
+            
+            // 更新所有标签的语言
+            var updatedTags = savedTags
+            
+            // 查找并更新"全部"标签
+            if let index = updatedTags.firstIndex(where: { $0 == "全部" || $0 == "All" }) {
+                updatedTags[index] = NSLocalizedString("all", comment: "")
+            }
+            
+            self.availableTags = updatedTags
         }
+    }
+    
+    // 判断是否为"全部"标签的辅助方法
+    func isAllTag(_ tag: String) -> Bool {
+        return tag == NSLocalizedString("all", comment: "") || tag == "全部" || tag == "All"
     }
     
     func addTag(_ tag: String) {
@@ -30,9 +53,15 @@ class TagManager: ObservableObject {
     }
     
     func deleteTag(_ tag: String) {
-        if tag != "全部" {
+        // 不允许删除"全部"标签
+        if !isAllTag(tag) {
             availableTags.removeAll { $0 == tag }
         }
+    }
+    
+    // 返回本地化后的"全部"标签
+    var allTag: String {
+        return NSLocalizedString("all", comment: "")
     }
 }
 

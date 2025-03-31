@@ -123,7 +123,7 @@ struct ContentView: View {
     var filteredItems: [Item] {
         items.filter { item in
             let dateFilter = item.timestamp >= startDate && item.timestamp <= endDate
-            let tagFilter = selectedTag == nil || selectedTag == "全部" || item.tag == selectedTag
+            let tagFilter = selectedTag == nil || tagManager.isAllTag(selectedTag ?? "") || item.tag == selectedTag
             return dateFilter && tagFilter
         }
     }
@@ -150,11 +150,11 @@ struct ContentView: View {
                     Menu {
                         ForEach(tagManager.availableTags, id: \.self) { tag in
                             Button(action: {
-                                selectedTag = tag == "全部" ? nil : tag
+                                selectedTag = tagManager.isAllTag(tag) ? nil : tag
                             }) {
                                 HStack {
                                     Text(tag)
-                                    if (selectedTag == nil && tag == "全部") || selectedTag == tag {
+                                    if (selectedTag == nil && tagManager.isAllTag(tag)) || selectedTag == tag {
                                         Image(systemName: "checkmark")
                                     }
                                 }
@@ -166,12 +166,12 @@ struct ContentView: View {
                         Button(action: {
                             showingTagEditor = true
                         }) {
-                            Label("编辑标签", systemImage: "pencil")
+                            Label(NSLocalizedString("edit_tags", comment: ""), systemImage: "pencil")
                         }
                     } label: {
                         HStack {
                             Image(systemName: "tag")
-                            Text(selectedTag ?? "全部")
+                            Text(selectedTag ?? tagManager.allTag)
                         }
                         .foregroundColor(.blue)
                         .padding(.horizontal, 12)
@@ -207,7 +207,7 @@ struct ContentView: View {
                     }
                 }
             }
-            .navigationTitle(selectedTag == nil ? "记录你的全部" : "记录你的\(selectedTag ?? "")")
+            .navigationTitle(selectedTag == nil ? NSLocalizedString("record_all", comment: "") : String(format: NSLocalizedString("record_tag", comment: ""), selectedTag ?? ""))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack {
@@ -218,11 +218,11 @@ struct ContentView: View {
                         
                         Menu {
                             Button(action: { showingCamera = true }) {
-                                Label("拍照", systemImage: "camera")
+                                Label(NSLocalizedString("take_photo", comment: ""), systemImage: "camera")
                             }
 
                             Button(action: { showingImagePicker = true }) {
-                                Label("从相册选择", systemImage: "photo.on.rectangle")
+                                Label(NSLocalizedString("select_from_album", comment: ""), systemImage: "photo.on.rectangle")
                             }
 
                             if filteredItems.count > 1 {
@@ -230,18 +230,18 @@ struct ContentView: View {
                                     currentPlaybackIndex = 0
                                     showingPlayback = true 
                                 }) {
-                                    Label("播放模式", systemImage: "play.circle")
+                                    Label(NSLocalizedString("playback_mode", comment: ""), systemImage: "play.circle")
                                 }
                             }
                             
                             if !filteredItems.isEmpty {
                                 Button(role: .destructive, action: { showingDeleteAllAlert = true }) {
-                                    Label("删除全部照片", systemImage: "trash")
+                                    Label(NSLocalizedString("delete_all_photos", comment: ""), systemImage: "trash")
                                 }
                             }
                             
                             Button(action: { showingHelp = true }) {
-                                Label("帮助", systemImage: "questionmark.circle")
+                                Label(NSLocalizedString("help", comment: ""), systemImage: "questionmark.circle")
                             }
                         } label: {
                             Image(systemName: "plus")
@@ -265,13 +265,13 @@ struct ContentView: View {
             .sheet(isPresented: $showingDateFilter) {
                 DateFilterView(startDate: $startDate, endDate: $endDate)
             }
-            .confirmationDialog("删除全部照片", isPresented: $showingDeleteAllAlert) {
-                Button("删除", role: .destructive) {
+            .confirmationDialog(NSLocalizedString("delete_all_photos", comment: ""), isPresented: $showingDeleteAllAlert) {
+                Button(NSLocalizedString("delete", comment: ""), role: .destructive) {
                     deleteAllItems()
                 }
-                Button("取消", role: .cancel) { }
+                Button(NSLocalizedString("cancel", comment: ""), role: .cancel) { }
             } message: {
-                Text("确定要删除所有照片吗？此操作无法撤销。")
+                Text(NSLocalizedString("delete_confirm_all", comment: ""))
             }
             .sheet(isPresented: $showingHelp) {
                 HelpView()

@@ -17,21 +17,21 @@ struct NoteEditorView: View {
                     .padding()
                     .background(Color(.systemBackground))
             }
-            .navigationTitle("编辑笔记")
+            .navigationTitle(NSLocalizedString("edit_note", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
+                    Button(NSLocalizedString("cancel", comment: "")) {
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button("清空") {
+                    Button(NSLocalizedString("clear", comment: "")) {
                         tempNote = ""
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") {
+                    Button(NSLocalizedString("done", comment: "")) {
                         note = tempNote
                         dismiss()
                     }

@@ -47,13 +47,13 @@ struct HelpView: View {
 
                     Link(destination: URL(string: "https://cornradio.org")!) {
                         Image(systemName: "link")
-                        Text("隐私政策")
+                        Text(NSLocalizedString("privacy_policy", comment: ""))
                             .font(.headline)
                     }
                 }
                 .padding()
             }
-            .navigationBarItems(trailing: Button("完成") {
+            .navigationBarItems(trailing: Button(NSLocalizedString("done", comment: "")) {
                 dismiss()
             })
         }

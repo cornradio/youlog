@@ -23,17 +23,17 @@ struct CameraView: View {
                 dismiss()
             }
         }
-        .alert("相机权限", isPresented: $camera.alert) {
-            Button("去设置") {
+        .alert(NSLocalizedString("camera_permission", comment: ""), isPresented: $camera.alert) {
+            Button(NSLocalizedString("go_to_settings", comment: "")) {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url)
                 }
             }
-            Button("取消", role: .cancel) {
+            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) {
                 dismiss()
             }
         } message: {
-            Text("请在设置中允许访问相机")
+            Text(NSLocalizedString("please_allow_camera", comment: ""))
         }
     }
 }
@@ -144,13 +144,13 @@ private struct TopToolbarView: View {
                     .padding()
             }
         }
-        .confirmationDialog("选择延迟时间", isPresented: $showingDelayPicker) {
-            ForEach([0, 3, 5, 10,15], id: \.self) { seconds in
-                Button("\(seconds)秒") {
+        .confirmationDialog(NSLocalizedString("select_delay", comment: ""), isPresented: $showingDelayPicker) {
+            ForEach([0, 3, 5, 10, 15], id: \.self) { seconds in
+                Button(String(format: NSLocalizedString("second", comment: ""), seconds)) {
                     camera.delaySeconds = seconds
                 }
             }
-            Button("取消", role: .cancel) {}
+            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) {}
         }
     }
 }
@@ -166,9 +166,9 @@ private struct TagSelectorView: View {
                 ForEach(tagManager.availableTags, id: \.self) { tag in
                     TagButtonCam(
                         title: tag,
-                        isSelected: selectedTag == nil ? tag == "全部" : selectedTag == tag,
+                        isSelected: selectedTag == nil ? tagManager.isAllTag(tag) : selectedTag == tag,
                         action: {
-                            selectedTag = tag == "全部" ? nil : tag
+                            selectedTag = tagManager.isAllTag(tag) ? nil : tag
                         }
                     )
                 }

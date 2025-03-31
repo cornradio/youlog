@@ -17,7 +17,7 @@ import SwiftUI
                 UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
                 showingSaveSuccess = true
             }) {
-                Label("保存到相册", systemImage: "square.and.arrow.down")
+                Label(NSLocalizedString("save_to_photos", comment: ""), systemImage: "square.and.arrow.down")
             }
             
             Button(action: {
@@ -30,21 +30,21 @@ import SwiftUI
                     window.rootViewController?.present(av, animated: true, completion: nil)
                 }
             }) {
-                Label("分享照片", systemImage: "square.and.arrow.up")
+                Label(NSLocalizedString("share_photo", comment: ""), systemImage: "square.and.arrow.up")
             }
 
             Button(action: {
                 selectedTag = item.tag
                 showingTagEditor = true
             }) {
-                Label("编辑标签", systemImage: "tag")
+                Label(NSLocalizedString("edit_tags", comment: ""), systemImage: "tag")
             }
 
             Button(action: {
                 editedNote = item.note ?? ""
                 showingNoteEditor = true
             }) {
-                Label("编辑笔记", systemImage: "pencil")
+                Label(NSLocalizedString("edit_note", comment: ""), systemImage: "pencil")
             }
             
             // Button(role: .destructive, action: {
@@ -57,7 +57,7 @@ import SwiftUI
             Button(role: .destructive, action: {
                 modelContext.delete(item)
             }) {
-                Label("永久删除", systemImage: "delete.left")
+                Label(NSLocalizedString("permanent_delete", comment: ""), systemImage: "delete.left")
             }
         }
     }

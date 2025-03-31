@@ -115,7 +115,7 @@ struct PhotoCard2: View {
                         selectedTag = item.tag
                         showingTagEditor = true
                     }) {
-                        Text(item.tag ?? "全部")
+                        Text(item.tag ?? NSLocalizedString("all", comment: ""))
                             .font(.body)
                             .foregroundColor(.primary)
                             .padding(2)
@@ -162,7 +162,7 @@ struct PhotoCard2: View {
                         } label: {
                             Image(systemName: "ellipsis.circle")
                                 .foregroundColor(.blue)
-                            Text("更多")
+                            Text(NSLocalizedString("more", comment: ""))
                                 .foregroundColor(.blue)	
                                 
                         }
@@ -174,18 +174,18 @@ struct PhotoCard2: View {
                 }
                 .padding(.horizontal, 4)
             }
-            .alert("删除照片", isPresented: $showingDeleteAlert) {
-                Button("取消", role: .cancel) { }
-                Button("删除", role: .destructive) {
+            .alert(NSLocalizedString("delete_photo", comment: ""), isPresented: $showingDeleteAlert) {
+                Button(NSLocalizedString("cancel", comment: ""), role: .cancel) { }
+                Button(NSLocalizedString("delete", comment: ""), role: .destructive) {
                     modelContext.delete(item)
                 }
             } message: {
-                Text("确定要删除这张照片吗？")
+                Text(NSLocalizedString("delete_confirm_photo", comment: ""))
             }
-            .alert("保存成功", isPresented: $showingSaveSuccess) {
-                Button("确定", role: .cancel) { }
+            .alert(NSLocalizedString("save_success", comment: ""), isPresented: $showingSaveSuccess) {
+                Button(NSLocalizedString("ok", comment: ""), role: .cancel) { }
             } message: {
-                Text("照片已保存到相册")
+                Text(NSLocalizedString("saved_to_photos", comment: ""))
             }
             .navigationDestination(isPresented: $showingFullScreen) {
                 ImageDetailView(images: itemImages, currentIndex: $currentImageIndex)
