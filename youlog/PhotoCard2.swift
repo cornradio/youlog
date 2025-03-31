@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PhotoCard2: View {
     let item: Item
+    var allItems: [Item] = []
     @Environment(\.modelContext) private var modelContext
     @State private var showingDeleteAlert = false
     @State private var showingFullScreen = false
@@ -11,10 +12,25 @@ struct PhotoCard2: View {
     @State private var editedNote: String = ""
     @State private var showingTagEditor = false
     @State private var selectedTag: String?
+    @State private var currentImageIndex: Int = 0
     
-    init(item: Item) {
+    init(item: Item, allItems: [Item] = []) {
         self.item = item
+        self.allItems = allItems.isEmpty ? [item] : allItems
         _editedNote = State(initialValue: item.note ?? "")
+    }
+    
+    private var itemImages: [UIImage] {
+        allItems.compactMap { item in
+            if let imageData = item.imageData {
+                return UIImage(data: imageData)
+            }
+            return nil
+        }
+    }
+    
+    private var currentItemIndex: Int {
+        allItems.firstIndex(where: { $0.id == item.id }) ?? 0
     }
     
     var body: some View {
@@ -31,6 +47,7 @@ struct PhotoCard2: View {
                         }
                         .onTapGesture {
                             DispatchQueue.main.async {
+                                currentImageIndex = currentItemIndex
                                 showingFullScreen = true
                             }
                         }
@@ -171,10 +188,7 @@ struct PhotoCard2: View {
                 Text("照片已保存到相册")
             }
             .navigationDestination(isPresented: $showingFullScreen) {
-                if let imageData = item.imageData,
-                   let uiImage = UIImage(data: imageData) {
-                    ImageDetailView(images: [uiImage], currentIndex: .constant(0))
-                }
+                ImageDetailView(images: itemImages, currentIndex: $currentImageIndex)
             }
             .sheet(isPresented: $showingTagEditor) {
                 TagEditorView(selectedTag: $selectedTag)

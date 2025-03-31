@@ -31,7 +31,7 @@ struct PhotoTimelineView: View {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        PhotoCard(item: item)
+                        PhotoCard(item: item, allItems: items)
                             .id(item.id)
                             .onTapGesture {
                                 withAnimation {
@@ -64,7 +64,7 @@ struct PhotoTimelineView2: View {
             ScrollView {
                 LazyVStack(spacing: 16) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        PhotoCard2(item: item)
+                        PhotoCard2(item: item, allItems: items)
                             .id(item.id)
                             .frame(maxWidth: UIScreen.main.bounds.width * 0.85)
                             .frame(maxWidth: .infinity)

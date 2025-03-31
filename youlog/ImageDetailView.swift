@@ -35,44 +35,6 @@ struct ImageDetailView: View {
         ZStack {
             Color.black.ignoresSafeArea() // Background color
             
-            // 左右导航按钮
-            HStack {
-                // 左侧按钮
-                Button(action: {
-                    if hasPrevious {
-                        withAnimation {
-                            currentIndex -= 1
-                            resetZoom()
-                        }
-                    }
-                }) {
-                    Image(systemName: "chevron.left.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundColor(hasPrevious ? .white : .gray.opacity(0.5))
-                        .padding()
-                }
-                .disabled(!hasPrevious)
-                
-                Spacer()
-                
-                // 右侧按钮
-                Button(action: {
-                    if hasNext {
-                        withAnimation {
-                            currentIndex += 1
-                            resetZoom()
-                        }
-                    }
-                }) {
-                    Image(systemName: "chevron.right.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundColor(hasNext ? .white : .gray.opacity(0.5))
-                        .padding()
-                }
-                .disabled(!hasNext)
-            }
-            .zIndex(1)
-            
             // 图片显示
             Image(uiImage: image)
                 .resizable()
@@ -87,9 +49,7 @@ struct ImageDetailView: View {
                         }
                         .onEnded { _ in
                             if scale < 1 {
-                                withAnimation {
-                                    scale = 1
-                                }
+                                scale = 1
                             }
                         }
                 )
@@ -99,47 +59,63 @@ struct ImageDetailView: View {
                             offset = value.translation
                         }
                         .onEnded { _ in
-                            withAnimation {
-                                offset = .zero
-                            }
+                            offset = .zero
                         }
                 )
                 .gesture(
                     TapGesture(count: 2)
                         .onEnded {
-                            withAnimation {
-                                if scale > 1 {
-                                    resetZoom()
-                                } else {
-                                    scale = 2.0
-                                }
+                            if scale > 1 {
+                                resetZoom()
+                            } else {
+                                scale = 2.0
                             }
                         }
                 )
         }
         .overlay(bottomMenu(), alignment: .bottom)
-        .overlay(imageCounter(), alignment: .top)
-    }
-    
-    // 图片计数器
-    private func imageCounter() -> some View {
-        Text("\(currentIndex + 1) / \(images.count)")
-            .font(.subheadline)
-            .foregroundColor(.white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color.black.opacity(0.7))
-            .cornerRadius(12)
-            .padding(.top, 20)
     }
 
     private func bottomMenu() -> some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 18) {
+            // 左导航按钮
+            Button(action: {
+                if hasPrevious {
+                    currentIndex -= 1
+                    resetZoom()
+                }
+            }) {
+                Image(systemName: "chevron.left.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(hasPrevious ? .white : .gray.opacity(0.5))
+            }
+            .disabled(!hasPrevious)
+            
+            // 图片计数
+            Text("\(currentIndex + 1) / \(images.count)")
+                .font(.subheadline)
+                .foregroundColor(.white)
+            
+            // 右导航按钮
+            Button(action: {
+                if hasNext {
+                    currentIndex += 1
+                    resetZoom()
+                }
+            }) {
+                Image(systemName: "chevron.right.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(hasNext ? .white : .gray.opacity(0.5))
+            }
+            .disabled(!hasNext)
+            
+            Divider()
+                .frame(height: 20)
+                .background(Color.white.opacity(0.3))
+            
             // 镜像翻转按钮
             Button(action: {
-                withAnimation {
-                    isFlipped.toggle()
-                }
+                isFlipped.toggle()
             }) {
                 Image(systemName: "arrow.left.and.right.circle.fill")
                     .font(.title2)

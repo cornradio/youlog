@@ -112,6 +112,7 @@ struct TimeDisplay: View {
 // 主视图
 struct PhotoCard: View {
     let item: Item
+    var allItems: [Item] = []
     @Environment(\.modelContext) private var modelContext
     @State private var showingDeleteAlert = false
     @State private var showingFullScreen = false
@@ -121,11 +122,26 @@ struct PhotoCard: View {
     @State private var editedNote: String = ""
     @State private var showingTagEditor = false
     @State private var selectedTag: String?
+    @State private var currentImageIndex: Int = 0
     @State private var isMenuEnabled = true
     
-    init(item: Item) {
+    init(item: Item, allItems: [Item] = []) {
         self.item = item
+        self.allItems = allItems.isEmpty ? [item] : allItems
         _editedNote = State(initialValue: item.note ?? "")
+    }
+    
+    private var itemImages: [UIImage] {
+        allItems.compactMap { item in
+            if let imageData = item.imageData {
+                return UIImage(data: imageData)
+            }
+            return nil
+        }
+    }
+    
+    private var currentItemIndex: Int {
+        allItems.firstIndex(where: { $0.id == item.id }) ?? 0
     }
     
     var body: some View {
@@ -134,7 +150,10 @@ struct PhotoCard: View {
                 PhotoImageView(
                     imageData: item.imageData,
                     note: item.note,
-                    onTap: { showingFullScreen = true },
+                    onTap: { 
+                        currentImageIndex = currentItemIndex
+                        showingFullScreen = true
+                    },
                     onLongPress: { showingQuickActions = true },
                     onNoteTap: { showingNoteEditor = true }
                 )
@@ -212,10 +231,7 @@ struct PhotoCard: View {
                     }
             }
             .navigationDestination(isPresented: $showingFullScreen) {
-                if let imageData = item.imageData,
-                   let uiImage = UIImage(data: imageData) {
-                    ImageDetailView(images: [uiImage], currentIndex: .constant(0))
-                }
+                ImageDetailView(images: itemImages, currentIndex: $currentImageIndex)
             }
         }
     }
