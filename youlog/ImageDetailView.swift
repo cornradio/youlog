@@ -12,15 +12,6 @@ struct ImageDetailView: View {
         images[currentIndex]
     }
     
-    // 检查是否有前一张或后一张图片
-    private var hasPrevious: Bool {
-        currentIndex > 0
-    }
-    
-    private var hasNext: Bool {
-        currentIndex < images.count - 1
-    }
-    
     private var imageSize: String {
         let data = image.jpegData(compressionQuality: 0.8)
         let sizeInBytes = data?.count ?? 0
@@ -29,6 +20,28 @@ struct ImageDetailView: View {
         } else {
             return String(format: "%.1f KB", Double(sizeInBytes) / 1024)
         }
+    }
+    
+    // 导航到上一张图片（带循环）
+    private func navigateToPrevious() {
+        if currentIndex > 0 {
+            currentIndex -= 1
+        } else {
+            // 如果是第一张，跳到最后一张
+            currentIndex = images.count - 1
+        }
+        resetZoom()
+    }
+    
+    // 导航到下一张图片（带循环）
+    private func navigateToNext() {
+        if currentIndex < images.count - 1 {
+            currentIndex += 1
+        } else {
+            // 如果是最后一张，跳回第一张
+            currentIndex = 0
+        }
+        resetZoom()
     }
 
     var body: some View {
@@ -78,36 +91,24 @@ struct ImageDetailView: View {
 
     private func bottomMenu() -> some View {
         HStack(spacing: 18) {
-            // 左导航按钮
-            Button(action: {
-                if hasPrevious {
-                    currentIndex -= 1
-                    resetZoom()
-                }
-            }) {
+            // 左导航按钮 - 总是启用，可循环
+            Button(action: navigateToPrevious) {
                 Image(systemName: "chevron.left.circle.fill")
                     .font(.title2)
-                    .foregroundColor(hasPrevious ? .white : .gray.opacity(0.5))
+                    .foregroundColor(.white)
             }
-            .disabled(!hasPrevious)
             
             // 图片计数
             Text("\(currentIndex + 1) / \(images.count)")
                 .font(.subheadline)
                 .foregroundColor(.white)
             
-            // 右导航按钮
-            Button(action: {
-                if hasNext {
-                    currentIndex += 1
-                    resetZoom()
-                }
-            }) {
+            // 右导航按钮 - 总是启用，可循环
+            Button(action: navigateToNext) {
                 Image(systemName: "chevron.right.circle.fill")
                     .font(.title2)
-                    .foregroundColor(hasNext ? .white : .gray.opacity(0.5))
+                    .foregroundColor(.white)
             }
-            .disabled(!hasNext)
             
             Divider()
                 .frame(height: 20)
