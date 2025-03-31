@@ -214,7 +214,7 @@ struct PhotoCard: View {
             .navigationDestination(isPresented: $showingFullScreen) {
                 if let imageData = item.imageData,
                    let uiImage = UIImage(data: imageData) {
-                    ImageDetailView(image: uiImage)
+                    ImageDetailView(images: [uiImage], currentIndex: .constant(0))
                 }
             }
         }

@@ -19,6 +19,19 @@ import SwiftUI
             }) {
                 Label("保存到相册", systemImage: "square.and.arrow.down")
             }
+            
+            Button(action: {
+                // 使用与ImageDetailView相同的分享实现
+                let av = UIActivityViewController(activityItems: [uiImage], applicationActivities: nil)
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let window = windowScene.windows.first {
+                    av.popoverPresentationController?.sourceView = window
+                    av.popoverPresentationController?.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                    window.rootViewController?.present(av, animated: true, completion: nil)
+                }
+            }) {
+                Label("分享照片", systemImage: "square.and.arrow.up")
+            }
 
             Button(action: {
                 selectedTag = item.tag
@@ -34,20 +47,30 @@ import SwiftUI
                 Label("编辑笔记", systemImage: "pencil")
             }
             
-
-            Button(role: .destructive, action: {
-                //显示确认
-                showingDeleteAlert = true
-            }) {
-                Label("删除照片", systemImage: "trash")
-            }
+            // Button(role: .destructive, action: {
+            //     //显示确认
+            //     showingDeleteAlert = true
+            // }) {
+            //     Label("删除照片", systemImage: "trash")
+            // }
             //增加一个按钮 强制删除 - 不提示弹窗
             Button(role: .destructive, action: {
                 modelContext.delete(item)
             }) {
-                Label("强制删除", systemImage: "delete.left")
+                Label("永久删除", systemImage: "delete.left")
             }
-            
         }
     }
+    
+// 分享Sheet
+struct ShareSheet: UIViewControllerRepresentable {
+    var items: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
     

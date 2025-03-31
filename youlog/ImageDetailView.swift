@@ -1,10 +1,25 @@
 import SwiftUI
 
 struct ImageDetailView: View {
-    let image: UIImage
+    let images: [UIImage]  // 改为图片数组
+    @Binding var currentIndex: Int  // 当前查看的图片索引，使用绑定以便可以在外部更新
     @State private var scale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
     @State private var isFlipped: Bool = false
+    
+    // 当前显示的图片
+    private var image: UIImage {
+        images[currentIndex]
+    }
+    
+    // 检查是否有前一张或后一张图片
+    private var hasPrevious: Bool {
+        currentIndex > 0
+    }
+    
+    private var hasNext: Bool {
+        currentIndex < images.count - 1
+    }
     
     private var imageSize: String {
         let data = image.jpegData(compressionQuality: 0.8)
@@ -19,14 +34,103 @@ struct ImageDetailView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea() // Background color
+            
+            // 左右导航按钮
+            HStack {
+                // 左侧按钮
+                Button(action: {
+                    if hasPrevious {
+                        withAnimation {
+                            currentIndex -= 1
+                            resetZoom()
+                        }
+                    }
+                }) {
+                    Image(systemName: "chevron.left.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(hasPrevious ? .white : .gray.opacity(0.5))
+                        .padding()
+                }
+                .disabled(!hasPrevious)
+                
+                Spacer()
+                
+                // 右侧按钮
+                Button(action: {
+                    if hasNext {
+                        withAnimation {
+                            currentIndex += 1
+                            resetZoom()
+                        }
+                    }
+                }) {
+                    Image(systemName: "chevron.right.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(hasNext ? .white : .gray.opacity(0.5))
+                        .padding()
+                }
+                .disabled(!hasNext)
+            }
+            .zIndex(1)
+            
+            // 图片显示
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
                 .scaleEffect(scale) // Zoom
                 .offset(offset) // Offset
                 .scaleEffect(x: isFlipped ? -1 : 1, y: 1)
+                .gesture(
+                    MagnificationGesture()
+                        .onChanged { value in
+                            scale = value
+                        }
+                        .onEnded { _ in
+                            if scale < 1 {
+                                withAnimation {
+                                    scale = 1
+                                }
+                            }
+                        }
+                )
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            offset = value.translation
+                        }
+                        .onEnded { _ in
+                            withAnimation {
+                                offset = .zero
+                            }
+                        }
+                )
+                .gesture(
+                    TapGesture(count: 2)
+                        .onEnded {
+                            withAnimation {
+                                if scale > 1 {
+                                    resetZoom()
+                                } else {
+                                    scale = 2.0
+                                }
+                            }
+                        }
+                )
         }
         .overlay(bottomMenu(), alignment: .bottom)
+        .overlay(imageCounter(), alignment: .top)
+    }
+    
+    // 图片计数器
+    private func imageCounter() -> some View {
+        Text("\(currentIndex + 1) / \(images.count)")
+            .font(.subheadline)
+            .foregroundColor(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.black.opacity(0.7))
+            .cornerRadius(12)
+            .padding(.top, 20)
     }
 
     private func bottomMenu() -> some View {
@@ -67,5 +171,11 @@ struct ImageDetailView: View {
         .background(Color.black.opacity(0.7))
         .clipShape(Capsule())
         .padding(.bottom, 20)
+    }
+    
+    // 重置缩放和偏移
+    private func resetZoom() {
+        scale = 1.0
+        offset = .zero
     }
 }

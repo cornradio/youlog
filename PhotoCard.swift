@@ -1,0 +1,1 @@
+ImageDetailView(images: [uiImage], currentIndex: .constant(0)) 
