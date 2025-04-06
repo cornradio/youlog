@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>NSCameraUsageDescription</key>
-	<string>CAMERA_USAGE_DESCRIPTION</string>
+	<string>Camera access is required to take photos and save them to Youlog</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>PHOTO_LIBRARY_USAGE_DESCRIPTION</string>
+	<string>Photo library access is required to add images from your photo library to Youlog</string>
 	<key>UIBackgroundModes</key>
 	<array/>
 </dict>
