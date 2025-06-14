@@ -109,6 +109,11 @@ struct ContentView: View {
     @State private var selectedTag: String? = nil
     @State private var showingTagEditor = false
     @AppStorage("isGridView") private var isGridView = true  // 使用 @AppStorage 替代 @State
+    @State private var showingDevMenu = false
+    @State private var isContinuousCapture = false
+    @State private var captureCount = 0
+    @State private var showingDataStats = false
+    @State private var captureTimer: Timer?
     
     enum TimeRange {
         case day, week, month
@@ -211,6 +216,11 @@ struct ContentView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack {
+                        Button(action: { showingDevMenu = true }) {
+                            Image(systemName: "hammer.fill")
+                                .foregroundColor(.orange)
+                        }
+                        
                         Button(action: { isGridView.toggle() }) {
                             Image(systemName: isGridView ? "square.grid.2x2" : "square.fill.text.grid.1x2")
                                 .foregroundColor(.blue)
@@ -279,6 +289,25 @@ struct ContentView: View {
             .sheet(isPresented: $showingTagEditor) {
                 TagEditorView(selectedTag: $selectedTag)
             }
+            .confirmationDialog("开发功能", isPresented: $showingDevMenu) {
+                Button(isContinuousCapture ? "停止连续拍照" : "开始连续拍照") {
+                    isContinuousCapture.toggle()
+                    if isContinuousCapture {
+                        startContinuousCapture()
+                    } else {
+                        stopContinuousCapture()
+                    }
+                }
+                
+                Button("数据统计") {
+                    showingDataStats = true
+                }
+                
+                Button("取消", role: .cancel) { }
+            }
+            .sheet(isPresented: $showingDataStats) {
+                DataStatsView(items: items)
+            }
         }
     }
     
@@ -301,6 +330,44 @@ struct ContentView: View {
         withAnimation {
             scrollProxy?.scrollTo(item.id, anchor: .center)
         }
+    }
+    
+    private func startContinuousCapture() {
+        captureCount = 0
+        captureTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            let newItem = Item(timestamp: Date(), 
+                             imageData: generateTestImage(),
+                             tag: selectedTag)
+            modelContext.insert(newItem)
+            captureCount += 1
+        }
+    }
+    
+    private func stopContinuousCapture() {
+        captureTimer?.invalidate()
+        captureTimer = nil
+    }
+    
+    private func generateTestImage() -> Data? {
+        let size = CGSize(width: 800, height: 600)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { context in
+            UIColor.systemBlue.setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+            
+            let text = "Test Image \(captureCount)"
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 30),
+                .foregroundColor: UIColor.white
+            ]
+            let textSize = text.size(withAttributes: attributes)
+            let textRect = CGRect(x: (size.width - textSize.width) / 2,
+                                y: (size.height - textSize.height) / 2,
+                                width: textSize.width,
+                                height: textSize.height)
+            text.draw(in: textRect, withAttributes: attributes)
+        }
+        return image.jpegData(compressionQuality: 0.8)
     }
 }
 
@@ -378,6 +445,76 @@ extension Array {
     }
 }
 
+// 数据统计视图
+struct DataStatsView: View {
+    let items: [Item]
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            List {
+                Section("基本统计") {
+                    StatRow(title: "总记录数", value: "\(items.count)")
+                    StatRow(title: "有图片的记录", value: "\(items.filter { $0.imageData != nil }.count)")
+                    StatRow(title: "有笔记的记录", value: "\(items.filter { $0.note != nil }.count)")
+                    StatRow(title: "有位置的记录", value: "\(items.filter { $0.location != nil }.count)")
+                }
+                
+                Section("存储统计") {
+                    let totalImageSize = items.compactMap { $0.imageData?.count }.reduce(0, +)
+                    StatRow(title: "图片总大小", value: formatFileSize(totalImageSize))
+                    StatRow(title: "平均图片大小", value: formatFileSize(totalImageSize / max(items.count, 1)))
+                }
+                
+                Section("时间统计") {
+                    if let firstItem = items.first {
+                        StatRow(title: "最早记录", value: formatDate(firstItem.timestamp))
+                    }
+                    if let lastItem = items.last {
+                        StatRow(title: "最新记录", value: formatDate(lastItem.timestamp))
+                    }
+                }
+            }
+            .navigationTitle("数据统计")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("关闭") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func formatFileSize(_ bytes: Int) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useKB, .useMB]
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: Int64(bytes))
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+}
+
+struct StatRow: View {
+    let title: String
+    let value: String
+    
+    var body: some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Text(value)
+                .foregroundColor(.secondary)
+        }
+    }
+}
 
 #Preview {
     ContentView()

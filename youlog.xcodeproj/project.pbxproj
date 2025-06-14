@@ -293,11 +293,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_ASSET_PATHS = "\"youlog/Preview Content\"";
-				DEVELOPMENT_TEAM = LU7CX9KTU6;
+				DEVELOPMENT_TEAM = D5H7JAAB28;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = youlog/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = youlog;
+				INFOPLIST_KEY_CFBundleDisplayName = "youlog-test";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "To use the camera feature, please allow [Youlog] to access camera permissions. After taking a photo, the photo will be saved to Youlog timeline , where you can view the photos and perform operations such as adding notes.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Photo library access is required to add images from your photo library to Youlog. The photos will be saved to Youlog timeline, , where you can view the photos and perform operations such as adding notes.";
@@ -312,7 +312,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.7;
-				PRODUCT_BUNDLE_IDENTIFIER = org.cornradio.youlog;
+				PRODUCT_BUNDLE_IDENTIFIER = test.org.cornradio.youlog;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -335,11 +335,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_ASSET_PATHS = "\"youlog/Preview Content\"";
-				DEVELOPMENT_TEAM = LU7CX9KTU6;
+				DEVELOPMENT_TEAM = D5H7JAAB28;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = youlog/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = youlog;
+				INFOPLIST_KEY_CFBundleDisplayName = "youlog-test";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "To use the camera feature, please allow [Youlog] to access camera permissions. After taking a photo, the photo will be saved to Youlog timeline , where you can view the photos and perform operations such as adding notes.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Photo library access is required to add images from your photo library to Youlog. The photos will be saved to Youlog timeline, , where you can view the photos and perform operations such as adding notes.";
@@ -354,7 +354,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.7;
-				PRODUCT_BUNDLE_IDENTIFIER = org.cornradio.youlog;
+				PRODUCT_BUNDLE_IDENTIFIER = test.org.cornradio.youlog;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
