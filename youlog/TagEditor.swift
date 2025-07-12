@@ -24,7 +24,7 @@ struct TagEditorView: View {
                                 Spacer()
                                 if (selectedTag == nil && tagManager.isAllTag(tag)) || selectedTag == tag {
                                     Image(systemName: "checkmark")
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(AppConstants.themeManager.currentTheme.color)
                                 }
                             }
                         }
@@ -54,14 +54,16 @@ struct TagEditorView: View {
             .navigationBarItems(
                 leading: Button(NSLocalizedString("cancel", comment: "")) {
                     dismiss()
-                },
+                }
+                .foregroundColor(AppConstants.themeManager.currentTheme.color),
                 trailing: HStack {
-                    EditButton()
+                    // EditButton()
                     Button(action: {
                         showingAddTag = true
                     }) {
                         Image(systemName: "plus")
                     }
+                    .foregroundColor(AppConstants.themeManager.currentTheme.color)
                 }
             )
             .sheet(isPresented: $showingAddTag) {
@@ -73,7 +75,8 @@ struct TagEditorView: View {
                     .navigationBarItems(
                         leading: Button(NSLocalizedString("cancel", comment: "")) {
                             showingAddTag = false
-                        },
+                        }
+                        .foregroundColor(AppConstants.themeManager.currentTheme.color),
                         trailing: Button(NSLocalizedString("add", comment: "")) {
                             if !newTag.isEmpty {
                                 tagManager.addTag(newTag)
@@ -81,6 +84,7 @@ struct TagEditorView: View {
                                 showingAddTag = false
                             }
                         }
+                        .foregroundColor(AppConstants.themeManager.currentTheme.color)
                     )
                 }
             }

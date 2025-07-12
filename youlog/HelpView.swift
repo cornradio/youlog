@@ -13,7 +13,7 @@ struct HelpView: View {
                         
                         Text("# 添加照片")
                             .font(.headline)
-                        Text("• 点击右上角"+"按钮\n• 选择【拍照】或【从相册选择】\n• 拍照时可以选择标签\n• 支持横屏和竖屏拍摄")
+                        Text("• 点击右上角"+"按钮\n• 选择【拍照】或【从相册选择】\n• 拍照时可以选择标签\n• 支持竖屏拍摄\n• 长按拍照按钮调用原相机")
                         
                         Text("# 照片管理")
                             .font(.headline)
@@ -55,7 +55,8 @@ struct HelpView: View {
             }
             .navigationBarItems(trailing: Button(NSLocalizedString("done", comment: "")) {
                 dismiss()
-            })
+            }
+            .foregroundColor(AppConstants.themeManager.currentTheme.color))
         }
     }
 }

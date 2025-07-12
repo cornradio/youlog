@@ -1,17 +1,11 @@
 import SwiftUI
 
 struct ImageDetailView: View {
-    let images: [UIImage]  // 改为图片数组
-    @Binding var currentIndex: Int  // 当前查看的图片索引，使用绑定以便可以在外部更新
-    @State private var scale: CGFloat = 1.0
-    @State private var offset: CGSize = .zero
+    let images: [UIImage]
+    @Binding var currentIndex: Int
     @State private var isFlipped: Bool = false
-    
-    // 当前显示的图片
-    private var image: UIImage {
-        images[currentIndex]
-    }
-    
+
+    private var image: UIImage { images[currentIndex] }
     private var imageSize: String {
         let data = image.jpegData(compressionQuality: 0.8)
         let sizeInBytes = data?.count ?? 0
@@ -21,100 +15,49 @@ struct ImageDetailView: View {
             return String(format: "%.1f KB", Double(sizeInBytes) / 1024)
         }
     }
-    
-    // 导航到上一张图片（带循环）
+
     private func navigateToPrevious() {
         if currentIndex > 0 {
             currentIndex -= 1
         } else {
-            // 如果是第一张，跳到最后一张
             currentIndex = images.count - 1
         }
-        resetZoom()
     }
-    
-    // 导航到下一张图片（带循环）
     private func navigateToNext() {
         if currentIndex < images.count - 1 {
             currentIndex += 1
         } else {
-            // 如果是最后一张，跳回第一张
             currentIndex = 0
         }
-        resetZoom()
     }
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea() // Background color
-            
-            // 图片显示
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .scaleEffect(scale) // Zoom
-                .offset(offset) // Offset
-                .scaleEffect(x: isFlipped ? -1 : 1, y: 1)
-                .gesture(
-                    MagnificationGesture()
-                        .onChanged { value in
-                            scale = value
-                        }
-                        .onEnded { _ in
-                            if scale < 1 {
-                                scale = 1
-                            }
-                        }
-                )
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            offset = value.translation
-                        }
-                        .onEnded { _ in
-                            offset = .zero
-                        }
-                )
-                .gesture(
-                    TapGesture(count: 2)
-                        .onEnded {
-                            if scale > 1 {
-                                resetZoom()
-                            } else {
-                                scale = 2.0
-                            }
-                        }
-                )
+            Color.black.ignoresSafeArea()
+            ZoomableImageView(image: image, isFlipped: isFlipped)
+                .ignoresSafeArea()
+                .overlay(bottomMenu(), alignment: .bottom)
         }
-        .overlay(bottomMenu(), alignment: .bottom)
     }
 
     private func bottomMenu() -> some View {
         HStack(spacing: 18) {
-            // 左导航按钮 - 总是启用，可循环
             Button(action: navigateToPrevious) {
                 Image(systemName: "chevron.left.circle.fill")
                     .font(.title2)
                     .foregroundColor(.white)
             }
-            
-            // 图片计数
             Text("\(currentIndex + 1) / \(images.count)")
                 .font(.subheadline)
                 .foregroundColor(.white)
-            
-            // 右导航按钮 - 总是启用，可循环
             Button(action: navigateToNext) {
                 Image(systemName: "chevron.right.circle.fill")
                     .font(.title2)
                     .foregroundColor(.white)
             }
-            
             Divider()
                 .frame(height: 20)
                 .background(Color.white.opacity(0.3))
-            
-            // 镜像翻转按钮
             Button(action: {
                 isFlipped.toggle()
             }) {
@@ -122,13 +65,9 @@ struct ImageDetailView: View {
                     .font(.title2)
                     .foregroundColor(.white)
             }
-            
-            // 图片大小显示
             Text(imageSize)
                 .font(.subheadline)
                 .foregroundColor(.white)
-            
-            // 分享按钮
             Button(action: {
                 let av = UIActivityViewController(activityItems: [image], applicationActivities: nil)
                 if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -149,10 +88,51 @@ struct ImageDetailView: View {
         .clipShape(Capsule())
         .padding(.bottom, 20)
     }
-    
-    // 重置缩放和偏移
-    private func resetZoom() {
-        scale = 1.0
-        offset = .zero
+}
+
+// UIKit实现的可缩放图片视图
+struct ZoomableImageView: UIViewRepresentable {
+    let image: UIImage
+    let isFlipped: Bool
+
+    func makeUIView(context: Context) -> UIScrollView {
+        let scrollView = UIScrollView()
+        scrollView.delegate = context.coordinator
+        scrollView.minimumZoomScale = 1.0
+        scrollView.maximumZoomScale = 5.0
+        scrollView.backgroundColor = .clear
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.showsHorizontalScrollIndicator = false
+
+        let imageView = UIImageView(image: image)
+        imageView.contentMode = .scaleAspectFit
+        imageView.clipsToBounds = true
+        imageView.tag = 99
+        scrollView.addSubview(imageView)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            imageView.centerXAnchor.constraint(equalTo: scrollView.centerXAnchor),
+            imageView.centerYAnchor.constraint(equalTo: scrollView.centerYAnchor),
+            imageView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            imageView.heightAnchor.constraint(equalTo: scrollView.heightAnchor)
+        ])
+        return scrollView
+    }
+
+    func updateUIView(_ scrollView: UIScrollView, context: Context) {
+        if let imageView = scrollView.viewWithTag(99) as? UIImageView {
+            imageView.image = image
+            imageView.transform = isFlipped ? CGAffineTransform(scaleX: -1, y: 1) : .identity
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    class Coordinator: NSObject, UIScrollViewDelegate {
+        func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+            scrollView.viewWithTag(99)
+        }
     }
 }

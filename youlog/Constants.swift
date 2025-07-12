@@ -1,5 +1,79 @@
 import Foundation
+import SwiftUI
 
+// MARK: - 主题色枚举
+enum AppTheme: String, CaseIterable {
+    case blue = "蓝色"
+    case purple = "紫色"
+    case green = "绿色"
+    case orange = "橙色"
+    case red = "红色"
+    case pink = "粉色"
+    case indigo = "靛蓝"
+    case teal = "青色"
+    
+    var color: Color {
+        switch self {
+        case .blue:
+            return .blue
+        case .purple:
+            return .purple
+        case .green:
+            return .green
+        case .orange:
+            return .orange
+        case .red:
+            return .red
+        case .pink:
+            return .pink
+        case .indigo:
+            return .indigo
+        case .teal:
+            return .teal
+        }
+    }
+    
+    var systemImage: String {
+        switch self {
+        case .blue:
+            return "circle.fill"
+        case .purple:
+            return "circle.fill"
+        case .green:
+            return "circle.fill"
+        case .orange:
+            return "circle.fill"
+        case .red:
+            return "circle.fill"
+        case .pink:
+            return "circle.fill"
+        case .indigo:
+            return "circle.fill"
+        case .teal:
+            return "circle.fill"
+        }
+    }
+}
+
+// MARK: - 主题管理器
+class ThemeManager: ObservableObject {
+    @Published var currentTheme: AppTheme {
+        didSet {
+            UserDefaults.standard.set(currentTheme.rawValue, forKey: "selectedTheme")
+        }
+    }
+    
+    init() {
+        let savedTheme = UserDefaults.standard.string(forKey: "selectedTheme") ?? AppTheme.blue.rawValue
+        self.currentTheme = AppTheme(rawValue: savedTheme) ?? .blue
+    }
+    
+    func setTheme(_ theme: AppTheme) {
+        currentTheme = theme
+    }
+}
+
+// MARK: - 标签管理器
 class TagManager: ObservableObject {
     @Published var availableTags: [String] {
         didSet {
@@ -67,6 +141,7 @@ class TagManager: ObservableObject {
 
 enum AppConstants {
     static let tagManager = TagManager()
+    static let themeManager = ThemeManager()
     static var availableTags: [String] {
         tagManager.availableTags
     }

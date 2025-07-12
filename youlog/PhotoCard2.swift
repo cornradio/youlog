@@ -111,21 +111,32 @@ struct PhotoCard2: View {
                         .padding( 4)
                     
                     //tag
-                    Button(action: {
-                        selectedTag = item.tag
-                        showingTagEditor = true
-                    }) {
+                    Menu {
+                        ForEach(AppConstants.tagManager.availableTags, id: \ .self) { tag in
+                            Button(action: {
+                                selectedTag = AppConstants.tagManager.isAllTag(tag) ? nil : tag
+                                item.tag = selectedTag
+                            }) {
+                                HStack {
+                                    Text(tag)
+                                    if (item.tag == nil && AppConstants.tagManager.isAllTag(tag)) || item.tag == tag {
+                                        Image(systemName: "checkmark")
+                                            .foregroundColor(AppConstants.themeManager.currentTheme.color)
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
                         Text(item.tag ?? NSLocalizedString("all", comment: ""))
                             .font(.body)
                             .foregroundColor(.primary)
                             .padding(2)
-                            .background(.indigo.opacity(0.1))
+                            .background(AppConstants.themeManager.currentTheme.color.opacity(0.1))
                             .cornerRadius(4)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 2)
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                             )
-
                     }.padding( 4)
                     //note
                     if let note = item.note, !note.isEmpty {
@@ -161,9 +172,9 @@ struct PhotoCard2: View {
                             }
                         } label: {
                             Image(systemName: "ellipsis.circle")
-                                .foregroundColor(.blue)
+                                .foregroundColor(AppConstants.themeManager.currentTheme.color)
                             Text(NSLocalizedString("more", comment: ""))
-                                .foregroundColor(.blue)	
+                                .foregroundColor(AppConstants.themeManager.currentTheme.color)	
                                 
                         }
                         .padding( 4)

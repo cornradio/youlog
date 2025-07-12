@@ -28,13 +28,14 @@ struct NoteEditorView: View {
                 ToolbarItem(placement: .primaryAction) {
                     Button(NSLocalizedString("clear", comment: "")) {
                         tempNote = ""
-                    }
+                    }.foregroundColor(.red)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(NSLocalizedString("done", comment: "")) {
                         note = tempNote
                         dismiss()
                     }
+                    .foregroundColor(AppConstants.themeManager.currentTheme.color)
                 }
             }
         }

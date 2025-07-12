@@ -116,7 +116,7 @@ private struct TopToolbarView: View {
                     if camera.isCountingDown {
                         Text("\(camera.countdownNumber)")
                             .foregroundColor(.white)
-                            .background(Color.blue)
+                            .background(AppConstants.themeManager.currentTheme.color)
                             .cornerRadius(10)
                             .padding(.horizontal, 10)
                     } else {
@@ -377,7 +377,7 @@ struct TagButtonCam: View {
                 .font(.subheadline)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(isSelected ? Color.blue : Color.white.opacity(0.3))
+                .background(isSelected ? AppConstants.themeManager.currentTheme.color : Color.white.opacity(0.3))
                 .foregroundColor(isSelected ? .white : .white)
                 .cornerRadius(20)
         }
