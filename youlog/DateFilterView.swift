@@ -23,20 +23,7 @@ struct DateFilterView: View {
         return Date()
     }
     
-    // 将日期转换为滑块值（0-1之间的浮点数）
-    private func dateToSliderValue(_ date: Date) -> Double {
-        let totalDays = calendar.dateComponents([.day], from: earliestDate, to: today).day ?? 365
-        let daysFromEarliest = calendar.dateComponents([.day], from: earliestDate, to: date).day ?? 0
-        return Double(daysFromEarliest) / Double(totalDays)
-    }
-    
-    // 将滑块值转换为日期
-    private func sliderValueToDate(_ value: Double) -> Date {
-        let totalDays = calendar.dateComponents([.day], from: earliestDate, to: today).day ?? 365
-        let daysToAdd = Int(value * Double(totalDays))
-        let date = calendar.date(byAdding: .day, value: daysToAdd, to: earliestDate) ?? Date()
-        return date
-    }
+
     
     // 获取一天的开始时间（00:00）
     private func startOfDay(_ date: Date) -> Date {
@@ -139,69 +126,7 @@ struct DateFilterView: View {
                     DatePicker(NSLocalizedString("end_date", comment: ""), selection: $endDate, displayedComponents: .date)
                 }
 
-                Section(header: Text("拖条筛选")) {
-                    // 拖动条
-                    VStack(spacing: 12) {
-                        // 开始日期拖动条
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text("开始日期")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                                Text(startDate, style: .date)
-                                    .font(.caption)
-                                    .foregroundColor(AppConstants.themeManager.currentTheme.color)
-                            }
-                            
-                                                            Slider(
-                                    value: Binding(
-                                        get: { dateToSliderValue(startDate) },
-                                        set: { newValue in
-                                            let newDate = sliderValueToDate(newValue)
-                                            // 确保开始日期不晚于结束日期，并设置为当天的开始时间
-                                            if newDate <= endDate {
-                                                startDate = startOfDay(newDate)
-                                            }
-                                        }
-                                    ),
-                                    in: 0...1,
-                                    step: 1.0 / 365.0 // 最小步长为1天
-                                )
-                            .accentColor(AppConstants.themeManager.currentTheme.color)
-                        }
-                        
-                        // 结束日期拖动条
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text("结束日期")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                                Text(endDate, style: .date)
-                                    .font(.caption)
-                                    .foregroundColor(AppConstants.themeManager.currentTheme.color)
-                            }
-                            
-                                                            Slider(
-                                    value: Binding(
-                                        get: { dateToSliderValue(endDate) },
-                                        set: { newValue in
-                                            let newDate = sliderValueToDate(newValue)
-                                            // 确保结束日期不早于开始日期，并设置为当天的结束时间
-                                            if newDate >= startDate {
-                                                endDate = endOfDay(newDate)
-                                            }
-                                        }
-                                    ),
-                                    in: 0...1,
-                                    step: 1.0 / 365.0 // 最小步长为1天
-                                )
-                            .accentColor(AppConstants.themeManager.currentTheme.color)
-                        }
-                    }
-                    .padding(.vertical, 8)
-                }
+
             }
             .navigationTitle(NSLocalizedString("date_filter", comment: ""))
             .navigationBarItems(trailing: Button(NSLocalizedString("done", comment: "")) {

@@ -594,6 +594,7 @@ extension Array {
 struct DataStatsView: View {
     let items: [Item]
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var tagManager = AppConstants.tagManager
     
     var body: some View {
         NavigationView {
@@ -615,6 +616,33 @@ struct DataStatsView: View {
                     }
                     if let lastItem = items.last {
                         StatRow(title: "最新记录", value: formatDate(lastItem.timestamp))
+                    }
+                }
+                
+                Section("标签统计") {
+                    // 按标签统计图片数量（排除"全部"标签）
+                    ForEach(tagManager.availableTags.filter { !tagManager.isAllTag($0) }, id: \.self) { tag in
+                        let tagItems = items.filter { item in
+                            return item.tag == tag
+                        }
+                        
+                        if !tagItems.isEmpty {
+                            let tagImageSize = tagItems.compactMap { $0.imageData?.count }.reduce(0, +)
+                            StatRow(
+                                title: tag,
+                                value: "\(tagItems.count) 张 (\(formatFileSize(tagImageSize)))"
+                            )
+                        }
+                    }
+                    
+                    // 未分类图片统计
+                    let untaggedItems = items.filter { $0.tag == nil }
+                    if !untaggedItems.isEmpty {
+                        let untaggedImageSize = untaggedItems.compactMap { $0.imageData?.count }.reduce(0, +)
+                        StatRow(
+                            title: "未分类",
+                            value: "\(untaggedItems.count) 张 (\(formatFileSize(untaggedImageSize)))"
+                        )
                     }
                 }
             }
@@ -668,6 +696,7 @@ struct ImageCleanerView: View {
     @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
     @State private var endDate = Date()
     @State private var showingDeleteConfirmation = false
+    @State private var showingSimpleDeleteConfirmation = false
     @State private var itemsToDelete: [Item] = []
     @State private var totalSize: Int = 0
     @State private var largeImageThresholdMB: Double = 5 // 默认5MB
@@ -758,7 +787,7 @@ struct ImageCleanerView: View {
                     Button("开始清理", role: .destructive) {
                         itemsToDelete = getItemsToDelete()
                         totalSize = itemsToDelete.compactMap { $0.imageData?.count }.reduce(0, +)
-                        showingDeleteConfirmation = true
+                        showingSimpleDeleteConfirmation = true
                     }
                     .disabled(getItemsToDelete().isEmpty)
                 }
@@ -772,7 +801,17 @@ struct ImageCleanerView: View {
                     }
                 }
             }
-            .confirmationDialog("确认删除", isPresented: $showingDeleteConfirmation) {
+            .sheet(isPresented: $showingDeleteConfirmation) {
+                DeleteConfirmationView(
+                    itemsToDelete: itemsToDelete,
+                    totalSize: totalSize,
+                    onDelete: {
+                        deleteItems(itemsToDelete)
+                        dismiss()
+                    }
+                )
+            }
+            .confirmationDialog("确认删除", isPresented: $showingSimpleDeleteConfirmation) {
                 Button("删除 \(itemsToDelete.count) 个记录", role: .destructive) {
                     deleteItems(itemsToDelete)
                     dismiss()
@@ -809,6 +848,105 @@ struct ImageCleanerView: View {
         withAnimation {
             for item in itemsToDelete {
                 modelContext.delete(item)
+            }
+        }
+    }
+    
+    private func formatFileSize(_ bytes: Int) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useKB, .useMB, .useGB]
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: Int64(bytes))
+    }
+}
+
+// MARK: - 删除确认视图
+struct DeleteConfirmationView: View {
+    let itemsToDelete: [Item]
+    let totalSize: Int
+    let onDelete: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    
+    private var images: [UIImage] {
+        itemsToDelete.compactMap { item in
+            if let imageData = item.imageData {
+                return UIImage(data: imageData)
+            }
+            return nil
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // 统计信息
+                VStack(spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text("将删除 \(itemsToDelete.count) 个记录")
+                                .font(.headline)
+                            Text("将释放 \(formatFileSize(totalSize)) 存储空间")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
+                    
+                    Divider()
+                }
+                
+                // 图片预览 - 九宫格布局
+                if !images.isEmpty {
+                    ScrollView {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                            ForEach(Array(itemsToDelete.enumerated()), id: \.element.id) { index, item in
+                                if let imageData = item.imageData,
+                                   let uiImage = UIImage(data: imageData) {
+                                    VStack(spacing: 4) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 100, height: 100)
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                            )
+                                        
+                                        Text(item.timestamp, style: .date)
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
+                    }
+                } else {
+                    VStack {
+                        Image(systemName: "photo")
+                            .font(.largeTitle)
+                            .foregroundColor(.gray)
+                        Text("没有可预览的图片")
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(height: 300)
+                }
+                
+                Spacer()
+            }
+            .navigationTitle("图片预览")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("关闭") {
+                        dismiss()
+                    }
+                }
             }
         }
     }

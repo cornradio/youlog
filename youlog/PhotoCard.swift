@@ -68,12 +68,27 @@ struct PhotoImageView: View {
 /// 显示单个标签的按钮组件
 /// 支持点击编辑标签功能
 struct TagButton: View {
-    let tag: String?               // 标签文本，nil时显示"全部"
-    let action: () -> Void        // 点击标签时的回调
+    let item: Item                 // 照片数据项
+    @Binding var selectedTag: String?  // 选中的标签
     
     var body: some View {
-        Button(action: action) {
-            Text(tag ?? NSLocalizedString("all", comment: ""))
+        Menu {
+            ForEach(AppConstants.tagManager.availableTags, id: \.self) { tag in
+                Button(action: {
+                    selectedTag = AppConstants.tagManager.isAllTag(tag) ? nil : tag
+                    item.tag = selectedTag
+                }) {
+                    HStack {
+                        Text(tag)
+                        if (item.tag == nil && AppConstants.tagManager.isAllTag(tag)) || item.tag == tag {
+                            Image(systemName: "checkmark")
+                                .foregroundColor(AppConstants.themeManager.currentTheme.color)
+                        }
+                    }
+                }
+            }
+        } label: {
+            Text(item.tag ?? NSLocalizedString("all", comment: ""))
                 .font(.caption)
                 .foregroundColor(.primary)
                 .padding(2)
@@ -138,6 +153,7 @@ struct PhotoCard: View {
     @State private var showingNoteEditor = false           // 是否显示备注编辑器
     @State private var editedNote: String = ""             // 正在编辑的备注内容
     @State private var showingTagEditor = false            // 是否显示标签编辑器
+    @State private var selectedTag: String?                // 选中的标签
     @State private var currentImageIndex: Int = 0          // 当前浏览的图片索引
     @State private var isMenuEnabled = true                // 菜单是否启用
     
@@ -145,6 +161,7 @@ struct PhotoCard: View {
         self.item = item
         self.allItems = allItems.isEmpty ? [item] : allItems
         _editedNote = State(initialValue: item.note ?? "")
+        _selectedTag = State(initialValue: item.tag)
     }
     
     // 获取所有图片的 UIImage 数组，用于全屏浏览
@@ -190,7 +207,7 @@ struct PhotoCard: View {
                         MenuContent(
                             uiImage: uiImage,
                             item: item,
-                            selectedTag: .constant(item.tag),  // 传递当前标签
+                            selectedTag: $selectedTag,  // 传递选中的标签
                             editedNote: $editedNote,
                             showingDeleteAlert: $showingDeleteAlert,
                             showingSaveSuccess: $showingSaveSuccess,
@@ -206,10 +223,7 @@ struct PhotoCard: View {
                     TimeDisplay(timestamp: item.timestamp)
                     
                     // 标签显示和编辑
-                    TagButton(tag: item.tag) {
-                        // 点击标签：打开标签编辑器
-                        showingTagEditor = true
-                    }
+                    TagButton(item: item, selectedTag: $selectedTag)
                     
                     Spacer();
                     
@@ -220,7 +234,7 @@ struct PhotoCard: View {
                             MenuContent(
                                 uiImage: uiImage,
                                 item: item,
-                                selectedTag: .constant(item.tag),
+                                selectedTag: $selectedTag,
                                 editedNote: $editedNote,
                                 showingDeleteAlert: $showingDeleteAlert,
                                 showingSaveSuccess: $showingSaveSuccess,
@@ -256,10 +270,10 @@ struct PhotoCard: View {
             
             // 标签编辑器弹窗
             .sheet(isPresented: $showingTagEditor) {
-                TagEditorView(selectedTag: .constant(item.tag))
+                TagEditorView(selectedTag: $selectedTag)
                     .onDisappear {
                         // 标签编辑器关闭时，更新照片的标签
-                        // 注意：这里可能需要通过 TagEditorView 的返回值来更新
+                        item.tag = selectedTag
                     }
             }
             
