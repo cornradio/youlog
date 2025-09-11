@@ -32,7 +32,9 @@ struct TagEditorView: View {
                     .onDelete { indexSet in
                         for index in indexSet {
                             let tag = tagManager.availableTags[index]
-                            tagManager.deleteTag(tag)
+                            if !tagManager.isUntaggedTag(tag) {
+                                tagManager.deleteTag(tag)
+                            }
                         }
                     }
                     .onMove { indices, newOffset in

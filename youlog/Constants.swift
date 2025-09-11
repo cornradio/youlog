@@ -87,6 +87,7 @@ class TagManager: ObservableObject {
     private static var defaultTags: [String] {
         [
             NSLocalizedString("all", comment: ""),
+            NSLocalizedString("未分类", comment: ""),
             "脸型", "身体", "宠物", "食物", "生活", "车子", "灵感"
         ]
     }
@@ -120,6 +121,11 @@ class TagManager: ObservableObject {
         return tag == NSLocalizedString("all", comment: "") || tag == "全部" || tag == "All"
     }
     
+    // 判断是否为"未分类"标签的辅助方法
+    func isUntaggedTag(_ tag: String) -> Bool {
+        return tag == NSLocalizedString("未分类", comment: "")
+    }
+    
     func addTag(_ tag: String) {
         if !availableTags.contains(tag) {
             availableTags.append(tag)
@@ -127,8 +133,8 @@ class TagManager: ObservableObject {
     }
     
     func deleteTag(_ tag: String) {
-        // 不允许删除"全部"标签
-        if !isAllTag(tag) {
+        // 不允许删除"全部"标签和"未分类"标签
+        if !isAllTag(tag) && !isUntaggedTag(tag) {
             availableTags.removeAll { $0 == tag }
         }
     }

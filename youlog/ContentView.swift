@@ -137,7 +137,19 @@ struct ContentView: View {
     var filteredItems: [Item] {
         items.filter { item in
             let dateFilter = item.timestamp >= startDate && item.timestamp <= endDate
-            let tagFilter = selectedTag == nil || tagManager.isAllTag(selectedTag ?? "") || item.tag == selectedTag
+            let tagFilter: Bool
+            
+            if selectedTag == nil || tagManager.isAllTag(selectedTag ?? "") {
+                // 显示所有图片
+                tagFilter = true
+            } else if tagManager.isUntaggedTag(selectedTag ?? "") {
+                // 显示未分类图片（没有tag的图片）
+                tagFilter = item.tag == nil
+            } else {
+                // 显示指定tag的图片
+                tagFilter = item.tag == selectedTag
+            }
+            
             return dateFilter && tagFilter
         }
     }
@@ -164,7 +176,11 @@ struct ContentView: View {
                     Menu {
                         ForEach(tagManager.availableTags, id: \.self) { tag in
                             Button(action: {
-                                selectedTag = tagManager.isAllTag(tag) ? nil : tag
+                                if tagManager.isAllTag(tag) {
+                                    selectedTag = nil
+                                } else {
+                                    selectedTag = tag
+                                }
                             }) {
                                 HStack {
                                     Text(tag)
@@ -661,9 +677,9 @@ struct DataStatsView: View {
                     if !untaggedItems.isEmpty {
                         let untaggedImageSize = untaggedItems.compactMap { $0.imageData?.count }.reduce(0, +)
                         StatRow(
-                            title: "未分类",
-                            value: "\(untaggedItems.count) 张 (\(formatFileSize(untaggedImageSize)))"
-                        )
+                        title: NSLocalizedString("未分类", comment: ""),
+                        value: "\(untaggedItems.count) 张 (\(formatFileSize(untaggedImageSize)))"
+                    )
                     }
                 }
             }
