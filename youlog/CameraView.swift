@@ -208,6 +208,7 @@ class CameraModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
     @Published var output = AVCapturePhotoOutput()
     @Published var preview: AVCaptureVideoPreviewLayer!
     @Published var isFlashOn = false
+    @Published var isPreviewPaused = false
     @Published var delaySeconds: Int = 0 {
         didSet {
             UserDefaults.standard.set(delaySeconds, forKey: "cameraDelaySeconds")
@@ -305,6 +306,12 @@ class CameraModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
     private func capturePhoto() {
         let settings = AVCapturePhotoSettings()
         settings.flashMode = isFlashOn ? .on : .off
+        
+        // 暂停预览以显示拍摄效果
+        DispatchQueue.main.async {
+            self.isPreviewPaused = true
+        }
+        
         DispatchQueue.global(qos: .background).async {
             self.output.capturePhoto(with: settings, delegate: self)
         }
@@ -314,6 +321,11 @@ class CameraModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
         if let imageData = photo.fileDataRepresentation() {
             DispatchQueue.main.async {
                 self.image = UIImage(data: imageData)
+                
+                // 延迟恢复预览，让用户看到拍摄完成的效果
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.isPreviewPaused = false
+                }
             }
         }
     }
@@ -362,6 +374,13 @@ struct CameraPreview: UIViewRepresentable {
     func updateUIView(_ uiView: UIView, context: Context) {
         DispatchQueue.main.async {
             camera.preview.frame = uiView.frame
+            
+            // 根据暂停状态控制预览层的连接
+            if camera.isPreviewPaused {
+                camera.preview.connection?.isEnabled = false
+            } else {
+                camera.preview.connection?.isEnabled = true
+            }
         }
     }
 }
