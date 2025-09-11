@@ -99,9 +99,10 @@ struct ImageDetailView: View {
     
     // 修改后的强制压缩函数
     private func forceCompressImage(_ image: UIImage) -> UIImage? {
-        // 目标宽度设为屏幕宽度的1.5倍，保持较高分辨率但仍有压缩效果
-        let targetWidth: CGFloat = UIScreen.main.bounds.width * 1.5 // 屏幕宽度的1.5倍
-        let compressionQuality: CGFloat = 0.6  // 提高质量到0.7，保持更好画质
+        // 使用设置中的压缩参数
+        let settings = CompressionSettings.shared
+        let targetWidth: CGFloat = settings.targetWidth
+        let compressionQuality: CGFloat = settings.compressionQuality
         
         let originalSize = image.size
         

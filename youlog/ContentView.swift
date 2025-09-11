@@ -122,6 +122,7 @@ struct ContentView: View {
     @State private var isServerRunning = false
     @State private var showingSupportDeveloper = false
     @State private var showingThemeSettings = false
+    @State private var showingCompressionSettings = false
     
     enum TimeRange {
         case day, week, month
@@ -192,7 +193,13 @@ struct ContentView: View {
                         .cornerRadius(8)
                     }
                     
-                    Button(action: { showingCamera = true }) {
+                    Button(action: {
+                        if CompressionSettings.shared.defaultUseSystemCamera {
+                            showingSystemCamera = true
+                        } else {
+                            showingCamera = true
+                        }
+                    }) {
                         Image(systemName: "camera.fill")
                             .font(.system(size: 20))
                             .foregroundColor(.white)
@@ -204,7 +211,11 @@ struct ContentView: View {
                     .simultaneousGesture(
                         LongPressGesture(minimumDuration: 0.5)
                             .onEnded { _ in
-                                showingSystemCamera = true
+                                if CompressionSettings.shared.defaultUseSystemCamera {
+                                    showingCamera = true
+                                } else {
+                                    showingSystemCamera = true
+                                }
                             }
                     )
                 }
@@ -265,6 +276,12 @@ struct ContentView: View {
 
                             Button(action: { showingImagePicker = true }) {
                                 Label(NSLocalizedString("select_from_album", comment: ""), systemImage: "photo.on.rectangle")
+                            }
+                            
+                            Divider()
+                            
+                            Button(action: { showingCompressionSettings = true }) {
+                                Label("压缩设置", systemImage: "slider.horizontal.3")
                             }
 
                             if !filteredItems.isEmpty {
@@ -383,6 +400,9 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingThemeSettings) {
                 ThemeSettingsView()
+            }
+            .sheet(isPresented: $showingCompressionSettings) {
+                CompressionSettingsView()
             }
         }
     }
@@ -987,7 +1007,15 @@ struct SystemCameraView: UIViewControllerRepresentable {
         
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let image = info[.originalImage] as? UIImage {
-                if let imageData = image.jpegData(compressionQuality: 0.8) {
+                let settings = CompressionSettings.shared
+                var finalImage = image
+                
+                // 如果开启了自动压缩，则进行压缩处理
+                if settings.autoCompressSystemCamera {
+                    finalImage = compressImage(image) ?? image
+                }
+                
+                if let imageData = finalImage.jpegData(compressionQuality: 0.8) {
                     parent.onImageDataSelected(imageData)
                 } else {
                     parent.onImageDataSelected(nil)
@@ -996,6 +1024,40 @@ struct SystemCameraView: UIViewControllerRepresentable {
                 parent.onImageDataSelected(nil)
             }
             parent.dismiss()
+        }
+        
+        private func compressImage(_ image: UIImage) -> UIImage? {
+            let settings = CompressionSettings.shared
+            let targetWidth: CGFloat = settings.targetWidth
+            let compressionQuality: CGFloat = settings.compressionQuality
+            
+            let originalSize = image.size
+            
+            var newSize: CGSize
+            if originalSize.width > targetWidth {
+                let ratio = targetWidth / originalSize.width
+                newSize = CGSize(
+                    width: targetWidth,
+                    height: originalSize.height * ratio
+                )
+            } else {
+                newSize = originalSize
+            }
+            
+            UIGraphicsBeginImageContextWithOptions(newSize, false, 0.0)
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+            let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
+            UIGraphicsEndImageContext()
+            
+            guard let finalImage = resizedImage else { return nil }
+            
+            // 应用质量压缩
+            guard let compressedData = finalImage.jpegData(compressionQuality: compressionQuality),
+                  let compressedImage = UIImage(data: compressedData) else {
+                return nil
+            }
+            
+            return compressedImage
         }
         
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
