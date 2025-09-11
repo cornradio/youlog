@@ -394,6 +394,7 @@ struct ContentView: View {
                         addItem(imageData: imageData)
                     }
                 }
+                .background(.black)
             }
             .sheet(isPresented: $showingSupportDeveloper) {
                 SupportDeveloperView()
