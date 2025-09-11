@@ -199,7 +199,15 @@ struct PhotoCard2: View {
                 Text(NSLocalizedString("saved_to_photos", comment: ""))
             }
             .navigationDestination(isPresented: $showingFullScreen) {
-                ImageDetailView(images: itemImages, currentIndex: $currentImageIndex)
+                ImageDetailView(images: itemImages, currentIndex: $currentImageIndex) { compressedImage, index in
+                    // 压缩完成后的回调：更新对应的 Item 的图片数据
+                    if index < allItems.count {
+                        let targetItem = allItems[index]
+                        if let compressedData = compressedImage.jpegData(compressionQuality: 0.8) {
+                            targetItem.imageData = compressedData
+                        }
+                    }
+                }
             }
             .sheet(isPresented: $showingTagEditor) {
                 TagEditorView(selectedTag: $selectedTag)
@@ -219,4 +227,4 @@ struct PhotoCard2: View {
         }
     }
     
-} 
+}

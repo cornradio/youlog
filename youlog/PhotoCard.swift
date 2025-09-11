@@ -187,10 +187,10 @@ struct PhotoCard: View {
                     imageData: item.imageData,
                     note: item.note,
                     onTap: { 
-                        // 点击图片：设置当前索引并显示全屏浏览
-                        currentImageIndex = currentItemIndex
-                        showingFullScreen = true
-                    },
+                    // 设置当前图片索引并显示全屏浏览
+                    currentImageIndex = currentItemIndex
+                    showingFullScreen = true
+                },
                     onLongPress: { 
                         // 长按图片：显示快速操作菜单
                         showingQuickActions = true 
@@ -292,7 +292,15 @@ struct PhotoCard: View {
             
             // 全屏图片浏览
             .navigationDestination(isPresented: $showingFullScreen) {
-                ImageDetailView(images: itemImages, currentIndex: $currentImageIndex)
+                ImageDetailView(images: itemImages, currentIndex: $currentImageIndex) { compressedImage, index in
+                    // 压缩完成后的回调：更新对应的 Item 的图片数据
+                    if index < allItems.count {
+                        let targetItem = allItems[index]
+                        if let compressedData = compressedImage.jpegData(compressionQuality: 0.8) {
+                            targetItem.imageData = compressedData
+                        }
+                    }
+                }
             }
         }
     }
