@@ -1045,17 +1045,42 @@ struct SystemCameraView: UIViewControllerRepresentable {
                 newSize = originalSize
             }
             
-            UIGraphicsBeginImageContextWithOptions(newSize, false, 0.0)
-            image.draw(in: CGRect(origin: .zero, size: newSize))
-            let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
-            UIGraphicsEndImageContext()
+            // 使用 UIGraphicsImageRenderer 替代旧的方法
+            let format = UIGraphicsImageRendererFormat()
+            format.opaque = true
+            format.scale = image.scale
             
-            guard let finalImage = resizedImage else { return nil }
+            let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
+            let resizedImage = renderer.image { context in
+                // 填充黑色背景
+                UIColor.black.setFill()
+                context.fill(CGRect(origin: .zero, size: newSize))
+                
+                // 设置高质量插值
+                context.cgContext.interpolationQuality = .high
+                
+                // 绘制图片
+                image.draw(in: CGRect(origin: .zero, size: newSize))
+            }
             
             // 应用质量压缩
-            guard let compressedData = finalImage.jpegData(compressionQuality: compressionQuality),
+            guard let compressedData = resizedImage.jpegData(compressionQuality: compressionQuality),
                   let compressedImage = UIImage(data: compressedData) else {
                 return nil
+            }
+            
+            // 裁切右边和下面1px
+            guard let cgImage = compressedImage.cgImage else { return compressedImage }
+            
+            let cropRect = CGRect(
+                x: 0,
+                y: 0,
+                width: max(1, cgImage.width - 1),
+                height: max(1, cgImage.height - 1)
+            )
+            
+            if let croppedCGImage = cgImage.cropping(to: cropRect) {
+                return UIImage(cgImage: croppedCGImage, scale: compressedImage.scale, orientation: compressedImage.imageOrientation)
             }
             
             return compressedImage

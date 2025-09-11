@@ -122,8 +122,15 @@ struct ImageDetailView: View {
         }
         
         // 重新采样的图片
-        let renderer = UIGraphicsImageRenderer(size: newSize) // 移除format参数，使用默认的
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale
+        format.opaque = true // 设置为不透明，避免白色背景
+        let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
         let resizedImage = renderer.image { context in
+            // 填充背景色为黑色，避免白线
+            context.cgContext.setFillColor(UIColor.black.cgColor)
+            context.cgContext.fill(CGRect(origin: .zero, size: newSize))
+            
             context.cgContext.interpolationQuality = .high // 使用高质量插值，以得到更好的缩放结果
             image.draw(in: CGRect(origin: .zero, size: newSize))
         }
@@ -134,7 +141,13 @@ struct ImageDetailView: View {
             return nil
         }
         
-        return compressedImage
+        // 裁切右边和下面1px避免白线
+        let cropRect = CGRect(x: 0, y: 0, width: compressedImage.size.width - 1, height: compressedImage.size.height - 1)
+        guard let cgImage = compressedImage.cgImage?.cropping(to: cropRect) else {
+            return compressedImage
+        }
+        
+        return UIImage(cgImage: cgImage, scale: compressedImage.scale, orientation: compressedImage.imageOrientation)
     }
 
     var body: some View {
