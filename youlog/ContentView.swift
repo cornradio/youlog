@@ -276,22 +276,10 @@ struct ContentView: View {
                         }
                         }
                         
-                        Button(action: { isGridView.toggle() }) {
-                            Image(systemName: isGridView ? "square.grid.2x2" : "square.fill.text.grid.1x2")
-                                .foregroundColor(AppConstants.themeManager.currentTheme.color)
-                        }
-                        
+                        // 设置菜单
                         Menu {
-                            Button(action: { showingCamera = true }) {
-                                Label(NSLocalizedString("take_photo", comment: ""), systemImage: "camera")
-                            }
-
-                            Button(action: { showingSystemCamera = true }) {
-                                Label("拍照（系统相机）", systemImage: "camera.aperture")
-                            }
-
-                            Button(action: { showingImagePicker = true }) {
-                                Label(NSLocalizedString("select_from_album", comment: ""), systemImage: "photo.on.rectangle")
+                            Button(action: { isGridView.toggle() }) {
+                                Label(isGridView ? "列表视图" : "网格视图", systemImage: isGridView ? "square.fill.text.grid.1x2" : "square.grid.2x2")
                             }
                             
                             Divider()
@@ -299,23 +287,12 @@ struct ContentView: View {
                             Button(action: { showingCompressionSettings = true }) {
                                 Label("压缩设置", systemImage: "slider.horizontal.3")
                             }
-
-                            if !filteredItems.isEmpty {
-                                Button(role: .destructive, action: { showingDeleteAllAlert = true }) {
-                                    Label(NSLocalizedString("delete_all_photos", comment: ""), systemImage: "trash")
-                                }
-                            }
-                            Divider()
                             
-                            if filteredItems.count > 1 {
-                                Button(action: { 
-                                    currentPlaybackIndex = 0
-                                    showingPlayback = true 
-                                }) {
-                                    Label(NSLocalizedString("playback_mode", comment: ""), systemImage: "play.circle")
-                                }
+                            Button(action: { showingThemeSettings = true }) {
+                                Label("主题", systemImage: "paintbrush")
                             }
-
+                            
+                            Divider()
                             
                             Button(action: { showingDataStats = true }) {
                                 Label("数据统计", systemImage: "chart.bar")
@@ -329,9 +306,18 @@ struct ContentView: View {
                                 Label("照片打包", systemImage: "externaldrive")
                             }
                             
-                            Divider()
-                                                        
+                            if filteredItems.count > 1 {
+                                Button(action: { 
+                                    currentPlaybackIndex = 0
+                                    showingPlayback = true 
+                                }) {
+                                    Label(NSLocalizedString("playback_mode", comment: ""), systemImage: "play.circle")
+                                }
+                            }
+                            
 
+                            
+                            Divider()
                             
                             Button(action: { showingSupportDeveloper = true }) {
                                 Label("支持", systemImage: "cup.and.saucer")
@@ -340,12 +326,31 @@ struct ContentView: View {
                             Button(action: { showingHelp = true }) {
                                 Label(NSLocalizedString("help", comment: ""), systemImage: "questionmark.circle")
                             }
-                            
-                            Button(action: { showingThemeSettings = true }) {
-                                Label("主题", systemImage: "paintbrush")
+                        } label: {
+                            Image(systemName: "gear")
+                                .foregroundColor(AppConstants.themeManager.currentTheme.color)
+                        }
+                        
+                        // 拍照菜单（简化版）
+                        Menu {
+                            Button(action: { showingCamera = true }) {
+                                Label(NSLocalizedString("take_photo", comment: ""), systemImage: "camera")
                             }
 
+                            Button(action: { showingSystemCamera = true }) {
+                                Label("拍照（系统相机）", systemImage: "camera.aperture")
+                            }
 
+                            Button(action: { showingImagePicker = true }) {
+                                Label(NSLocalizedString("select_from_album", comment: ""), systemImage: "photo.on.rectangle")
+                            }
+                            Divider()
+                            
+                            if !filteredItems.isEmpty {
+                                Button(role: .destructive, action: { showingDeleteAllAlert = true }) {
+                                    Label(NSLocalizedString("delete_all_photos", comment: ""), systemImage: "trash")
+                                }
+                            }
                         } label: {
                             Image(systemName: "plus")
                                 .foregroundColor(AppConstants.themeManager.currentTheme.color)
