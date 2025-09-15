@@ -112,6 +112,23 @@ class TagManager: ObservableObject {
                 updatedTags[index] = NSLocalizedString("all", comment: "")
             }
             
+            // 确保"全部"标签存在
+            let allTag = NSLocalizedString("all", comment: "")
+            if !updatedTags.contains(allTag) {
+                updatedTags.insert(allTag, at: 0)
+            }
+            
+            // 确保"未分类"标签存在
+            let untaggedTag = NSLocalizedString("未分类", comment: "")
+            if !updatedTags.contains(untaggedTag) {
+                // 将"未分类"标签插入到"全部"标签之后
+                if let allIndex = updatedTags.firstIndex(of: allTag) {
+                    updatedTags.insert(untaggedTag, at: allIndex + 1)
+                } else {
+                    updatedTags.append(untaggedTag)
+                }
+            }
+            
             self.availableTags = updatedTags
         }
     }
