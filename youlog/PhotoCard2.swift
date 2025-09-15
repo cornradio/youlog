@@ -239,21 +239,10 @@ struct PhotoCard2: View {
             .sheet(isPresented: $showingDatePicker) {
                 NavigationView {
                     VStack(spacing: 20) {
-                        Text("修改当前图片的日期时间")
-                            .font(.headline)
-                            .padding(.top)
-                        
-                        Text("修改后可能需要重新筛选找到照片")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+
                         
                         VStack(spacing: 16) {
-                            Text("选择日期")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            
+
                             DatePicker(
                                 "",
                                 selection: $selectedDate,
@@ -263,12 +252,7 @@ struct PhotoCard2: View {
                             .labelsHidden()
                             
                             Divider()
-                            
-                            Text("选择时间")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            
+
                             DatePicker(
                                 "",
                                 selection: $selectedDate,
@@ -279,6 +263,11 @@ struct PhotoCard2: View {
                         }
                         
                         Spacer()
+                                                
+                        Text("修改后可能需要重新筛选找到照片")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
                     }
                     .padding()
                     .navigationTitle("修改时间")
