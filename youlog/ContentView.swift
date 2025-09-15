@@ -489,11 +489,11 @@ struct ContentView: View {
             UIColor.clear.setFill()
             context.fill(CGRect(origin: .zero, size: size))
             
-            // 获取主题颜色
-            let themeColor = UIColor(AppConstants.themeManager.currentTheme.color)
+            // 使用灰色以确保在黑白背景下都可见
+            let themeColor = UIColor.systemGray
             
             // 绘制边框
-            let borderWidth: CGFloat = 8
+            let borderWidth: CGFloat = 4
             let borderRect = CGRect(
                 x: borderWidth / 2,
                 y: borderWidth / 2,
@@ -507,7 +507,7 @@ struct ContentView: View {
             borderPath.stroke()
             
             // 在中心绘制图标
-            let iconSize: CGFloat = 80
+            let iconSize: CGFloat = 40
             let iconRect = CGRect(
                 x: (size.width - iconSize) / 2,
                 y: (size.height - iconSize) / 2,
