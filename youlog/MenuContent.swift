@@ -14,6 +14,7 @@ import SwiftUI
         @Environment(\.modelContext) private var modelContext  // 添加 modelContext
         
         var body: some View {
+            // 第一组：保存相册、分享照片
             Button(action: {
                 UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
                 showingSaveSuccess = true
@@ -33,12 +34,21 @@ import SwiftUI
             }) {
                 Label(NSLocalizedString("share_photo", comment: ""), systemImage: "square.and.arrow.up")
             }
-
+            
+            Divider()
+            
+            // 第二组：编辑标签、修改时间、编辑笔记
             Button(action: {
                 selectedTag = item.tag
                 showingTagEditor = true
             }) {
                 Label(NSLocalizedString("edit_tags", comment: ""), systemImage: "tag")
+            }
+            
+            Button(action: {
+                onEditTime()
+            }) {
+                Label("修改时间", systemImage: "clock.arrow.trianglehead.2.counterclockwise.rotate.90")
             }
 
             Button(action: {
@@ -48,19 +58,9 @@ import SwiftUI
                 Label(NSLocalizedString("edit_note", comment: ""), systemImage: "square.and.pencil")
             }
             
-            Button(action: {
-                onEditTime()
-            }) {
-                Label("修改时间", systemImage: "clock.arrow.trianglehead.2.counterclockwise.rotate.90")
-            }
+            Divider()
             
-            // Button(role: .destructive, action: {
-            //     //显示确认
-            //     showingDeleteAlert = true
-            // }) {
-            //     Label("删除照片", systemImage: "trash")
-            // }
-            //增加一个按钮 强制删除 - 不提示弹窗
+            // 第三组：永久删除
             Button(role: .destructive, action: {
                 modelContext.delete(item)
             }) {
