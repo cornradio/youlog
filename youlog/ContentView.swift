@@ -344,6 +344,11 @@ struct ContentView: View {
                             Button(action: { showingImagePicker = true }) {
                                 Label(NSLocalizedString("select_from_album", comment: ""), systemImage: "photo.on.rectangle")
                             }
+                            
+                            Button(action: { createNoteOnlyItem() }) {
+                                Label("纯笔记", systemImage: "square.and.pencil")
+                            }
+                            
                             Divider()
                             
                             if !filteredItems.isEmpty {
@@ -464,6 +469,64 @@ struct ContentView: View {
     private func stopContinuousCapture() {
         captureTimer?.invalidate()
         captureTimer = nil
+    }
+    
+    private func createNoteOnlyItem() {
+        withAnimation {
+            let noteImage = generateNoteImage()
+            let newItem = Item(timestamp: Date(), imageData: noteImage, tag: selectedTag)
+            modelContext.insert(newItem)
+        }
+    }
+    
+    private func generateNoteImage() -> Data? {
+        // 创建竖屏尺寸的占位符图片 (3:4 比例)
+        let size = CGSize(width: 300, height: 400)
+        
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { context in
+            // 使用透明背景
+            UIColor.clear.setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+            
+            // 获取主题颜色
+            let themeColor = UIColor(AppConstants.themeManager.currentTheme.color)
+            
+            // 绘制边框
+            let borderWidth: CGFloat = 8
+            let borderRect = CGRect(
+                x: borderWidth / 2,
+                y: borderWidth / 2,
+                width: size.width - borderWidth,
+                height: size.height - borderWidth
+            )
+            
+            let borderPath = UIBezierPath(roundedRect: borderRect, cornerRadius: 18)
+            borderPath.lineWidth = borderWidth
+            themeColor.setStroke()
+            borderPath.stroke()
+            
+            // 在中心绘制图标
+            let iconSize: CGFloat = 80
+            let iconRect = CGRect(
+                x: (size.width - iconSize) / 2,
+                y: (size.height - iconSize) / 2,
+                width: iconSize,
+                height: iconSize
+            )
+            
+            // 使用SF Symbol绘制图标
+            if let iconImage = UIImage(systemName: "square.and.pencil")?.withConfiguration(
+                UIImage.SymbolConfiguration(pointSize: iconSize, weight: .medium)
+            ) {
+                // 设置图标颜色为主题色
+                themeColor.setFill()
+                iconImage.withTintColor(themeColor, renderingMode: .alwaysTemplate).draw(in: iconRect)
+            }
+        }
+        
+        // 使用PNG格式保持透明背景
+        return image.pngData()
     }
     
     private func generateTestImage() -> Data? {
