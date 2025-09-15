@@ -345,9 +345,9 @@ struct ContentView: View {
                                 Label(NSLocalizedString("select_from_album", comment: ""), systemImage: "photo.on.rectangle")
                             }
                             
-                            Button(action: { createNoteOnlyItem() }) {
-                                Label("纯笔记", systemImage: "square.and.pencil")
-                            }
+                            // Button(action: { createNoteOnlyItem() }) {
+                            //     Label("纯笔记", systemImage: "square.and.pencil")
+                            // }
                             
                             Divider()
                             
