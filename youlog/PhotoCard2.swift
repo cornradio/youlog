@@ -13,11 +13,14 @@ struct PhotoCard2: View {
     @State private var showingTagEditor = false
     @State private var selectedTag: String?
     @State private var currentImageIndex: Int = 0
+    @State private var showingDatePicker = false
+    @State private var selectedDate: Date = Date()
     
     init(item: Item, allItems: [Item] = []) {
         self.item = item
         self.allItems = allItems.isEmpty ? [item] : allItems
         _editedNote = State(initialValue: item.note ?? "")
+        _selectedDate = State(initialValue: item.timestamp)
     }
     
     private var itemImages: [UIImage] {
@@ -60,7 +63,9 @@ struct PhotoCard2: View {
                                 }
                         )
                         .contextMenu {
-                            MenuContent(uiImage: uiImage, item: item, selectedTag: $selectedTag, editedNote: $editedNote, showingDeleteAlert: $showingDeleteAlert, showingSaveSuccess: $showingSaveSuccess, showingTagEditor: $showingTagEditor, showingNoteEditor: $showingNoteEditor)
+                            MenuContent(uiImage: uiImage, item: item, selectedTag: $selectedTag, editedNote: $editedNote, showingDeleteAlert: $showingDeleteAlert, showingSaveSuccess: $showingSaveSuccess, showingTagEditor: $showingTagEditor, showingNoteEditor: $showingNoteEditor, onEditTime: {
+                                showingDatePicker = true
+                            })
                         }
                 } else {
                     Rectangle()
@@ -99,6 +104,9 @@ struct PhotoCard2: View {
                             .foregroundColor(.primary)
                     }
                     .padding( 4)
+                    .onTapGesture {
+                        showingDatePicker = true
+                    }
                     // 星期几
                     var dayOfWeekFormatter: DateFormatter {
                         let formatter = DateFormatter()
@@ -168,7 +176,9 @@ struct PhotoCard2: View {
                                let uiImage = UIImage(data: imageData) {
                                 MenuContent(uiImage: uiImage, item: item,
                                           selectedTag: $selectedTag,
-                                          editedNote: $editedNote, showingDeleteAlert: $showingDeleteAlert, showingSaveSuccess: $showingSaveSuccess, showingTagEditor: $showingTagEditor, showingNoteEditor: $showingNoteEditor)
+                                          editedNote: $editedNote, showingDeleteAlert: $showingDeleteAlert, showingSaveSuccess: $showingSaveSuccess, showingTagEditor: $showingTagEditor, showingNoteEditor: $showingNoteEditor, onEditTime: {
+                                    showingDatePicker = true
+                                })
                             }
                         } label: {
                             Image(systemName: "ellipsis.circle")
@@ -223,6 +233,73 @@ struct PhotoCard2: View {
                     .onDisappear {
                         item.note = editedNote
                     }
+            }
+            
+            // 日期时间选择器
+            .sheet(isPresented: $showingDatePicker) {
+                NavigationView {
+                    VStack(spacing: 20) {
+                        Text("修改当前图片的日期时间")
+                            .font(.headline)
+                            .padding(.top)
+                        
+                        Text("修改后可能需要重新筛选找到照片")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        VStack(spacing: 16) {
+                            Text("选择日期")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            DatePicker(
+                                "",
+                                selection: $selectedDate,
+                                displayedComponents: [.date]
+                            )
+                            .datePickerStyle(.graphical)
+                            .labelsHidden()
+                            
+                            Divider()
+                            
+                            Text("选择时间")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            DatePicker(
+                                "",
+                                selection: $selectedDate,
+                                displayedComponents: [.hourAndMinute]
+                            )
+                            .datePickerStyle(.wheel)
+                            .labelsHidden()
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding()
+                    .navigationTitle("修改时间")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button("取消") {
+                                showingDatePicker = false
+                            }
+                        }
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("保存") {
+                                item.timestamp = selectedDate
+                                showingDatePicker = false
+                            }
+                        }
+                    }
+                }
+                .onAppear {
+                    selectedDate = item.timestamp
+                }
             }
         }
     }

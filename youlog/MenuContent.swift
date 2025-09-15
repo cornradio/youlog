@@ -10,6 +10,7 @@ import SwiftUI
         @Binding var showingSaveSuccess: Bool
         @Binding var showingTagEditor: Bool
         @Binding var showingNoteEditor: Bool
+        let onEditTime: () -> Void  // 修改时间的回调
         @Environment(\.modelContext) private var modelContext  // 添加 modelContext
         
         var body: some View {
@@ -17,7 +18,7 @@ import SwiftUI
                 UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
                 showingSaveSuccess = true
             }) {
-                Label(NSLocalizedString("save_to_photos", comment: ""), systemImage: "square.and.arrow.down")
+                Label(NSLocalizedString("save_to_photos", comment: ""), systemImage: "photo.on.rectangle")
             }
             
             Button(action: {
@@ -44,7 +45,13 @@ import SwiftUI
                 editedNote = item.note ?? ""
                 showingNoteEditor = true
             }) {
-                Label(NSLocalizedString("edit_note", comment: ""), systemImage: "pencil")
+                Label(NSLocalizedString("edit_note", comment: ""), systemImage: "square.and.pencil")
+            }
+            
+            Button(action: {
+                onEditTime()
+            }) {
+                Label("修改时间", systemImage: "clock.arrow.trianglehead.2.counterclockwise.rotate.90")
             }
             
             // Button(role: .destructive, action: {

@@ -108,6 +108,7 @@ struct TagButton: View {
 /// 包含时间和日期两部分
 struct TimeDisplay: View {
     let timestamp: Date            // 时间戳
+    let onTap: () -> Void         // 点击时间的回调
     
     // 时间格式化器 - 显示小时:分钟
     private var timeFormatter: DateFormatter {
@@ -136,6 +137,9 @@ struct TimeDisplay: View {
                 .bold()
                 .foregroundColor(.secondary)
         }
+        .onTapGesture {
+            onTap()
+        }
     }
 }
 
@@ -156,12 +160,15 @@ struct PhotoCard: View {
     @State private var selectedTag: String?                // 选中的标签
     @State private var currentImageIndex: Int = 0          // 当前浏览的图片索引
     @State private var isMenuEnabled = true                // 菜单是否启用
+    @State private var showingDatePicker = false           // 是否显示日期选择器
+    @State private var selectedDate: Date = Date()         // 选中的日期
     
     init(item: Item, allItems: [Item] = []) {
         self.item = item
         self.allItems = allItems.isEmpty ? [item] : allItems
         _editedNote = State(initialValue: item.note ?? "")
         _selectedTag = State(initialValue: item.tag)
+        _selectedDate = State(initialValue: item.timestamp)
     }
     
     // 获取所有图片的 UIImage 数组，用于全屏浏览
@@ -212,7 +219,10 @@ struct PhotoCard: View {
                             showingDeleteAlert: $showingDeleteAlert,
                             showingSaveSuccess: $showingSaveSuccess,
                             showingTagEditor: $showingTagEditor,
-                            showingNoteEditor: $showingNoteEditor
+                            showingNoteEditor: $showingNoteEditor,
+                            onEditTime: {
+                                showingDatePicker = true
+                            }
                         )
                     }
                 }
@@ -220,7 +230,9 @@ struct PhotoCard: View {
                 // 底部信息栏：时间、标签、操作按钮
                 HStack {
                     // 时间显示
-                    TimeDisplay(timestamp: item.timestamp)
+                    TimeDisplay(timestamp: item.timestamp) {
+                        showingDatePicker = true
+                    }
                     
                     // 标签显示和编辑
                     TagButton(item: item, selectedTag: $selectedTag)
@@ -239,7 +251,10 @@ struct PhotoCard: View {
                                 showingDeleteAlert: $showingDeleteAlert,
                                 showingSaveSuccess: $showingSaveSuccess,
                                 showingTagEditor: $showingTagEditor,
-                                showingNoteEditor: $showingNoteEditor
+                                showingNoteEditor: $showingNoteEditor,
+                                onEditTime: {
+                                    showingDatePicker = true
+                                }
                             )
                         }
                     } label: {
@@ -300,6 +315,73 @@ struct PhotoCard: View {
                             targetItem.imageData = compressedData
                         }
                     }
+                }
+            }
+            
+            // 日期时间选择器
+            .sheet(isPresented: $showingDatePicker) {
+                NavigationView {
+                    VStack(spacing: 20) {
+                        Text("修改当前图片的日期时间")
+                            .font(.headline)
+                            .padding(.top)
+                        
+                        Text("修改后可能需要重新筛选找到照片")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        VStack(spacing: 16) {
+                            Text("选择日期")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            DatePicker(
+                                "",
+                                selection: $selectedDate,
+                                displayedComponents: [.date]
+                            )
+                            .datePickerStyle(.graphical)
+                            .labelsHidden()
+                            
+                            Divider()
+                            
+                            Text("选择时间")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            DatePicker(
+                                "",
+                                selection: $selectedDate,
+                                displayedComponents: [.hourAndMinute]
+                            )
+                            .datePickerStyle(.wheel)
+                            .labelsHidden()
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding()
+                    .navigationTitle("修改时间")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button("取消") {
+                                showingDatePicker = false
+                            }
+                        }
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("保存") {
+                                item.timestamp = selectedDate
+                                showingDatePicker = false
+                            }
+                        }
+                    }
+                }
+                .onAppear {
+                    selectedDate = item.timestamp
                 }
             }
         }
