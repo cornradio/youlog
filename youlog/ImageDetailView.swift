@@ -211,7 +211,7 @@ struct ImageDetailView: View {
                     window.rootViewController?.present(av, animated: true, completion: nil)
                 }
             }) {
-                Image(systemName: "square.and.arrow.up")
+                Image(systemName: "square.and.arrow.up.circle.fill")
                     .font(.title2)
                     .foregroundColor(.white)
             }

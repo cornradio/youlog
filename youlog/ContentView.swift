@@ -186,7 +186,7 @@ struct ContentView: View {
                                 Image(systemName: "calendar")
                                 Text("\(dateFormatter.string(from: startDate)) - \(dateFormatter.string(from: endDate))")
                             }
-                            .foregroundColor(.accentColor)
+                            .foregroundColor(AppConstants.themeManager.currentTheme.color)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
                             .background(AppConstants.themeManager.currentTheme.color.opacity(0.1))
@@ -311,8 +311,11 @@ struct ContentView: View {
                             .foregroundColor(AppConstants.themeManager.currentTheme.color)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
+                            .background(AppConstants.themeManager.currentTheme.color.opacity(0.1))
+                            .cornerRadius(28)
                             .cornerRadius(8)
                            .glassEffect()
+
                         }
 
                        
@@ -1222,7 +1225,7 @@ struct NetworkTransferView: View {
                     Text("• 也可以在文件App中压缩打包，然后备份到其他地方")
                 }
                 .padding()
-                .background(Color.blue.opacity(0.1))
+                .background(AppConstants.themeManager.currentTheme.color.opacity(0.1))
                 .cornerRadius(12)
                 
                 Spacer()
