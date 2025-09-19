@@ -123,6 +123,7 @@ struct ContentView: View {
     @State private var showingSupportDeveloper = false
     @State private var showingThemeSettings = false
     @State private var showingCompressionSettings = false
+    @State private var showingLiquidGlassTest = false
     
     enum TimeRange {
         case day, week, month
@@ -157,86 +158,8 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // 日期筛选栏和 Tag 选择器
-                HStack {
-                    Button(action: { showingDateFilter = true }) {
-                        HStack {
-                            Image(systemName: "calendar")
-                            Text("\(dateFormatter.string(from: startDate)) - \(dateFormatter.string(from: endDate))")
-                        }
-                        .foregroundColor(AppConstants.themeManager.currentTheme.color)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(AppConstants.themeManager.currentTheme.color.opacity(0.1))
-                        .cornerRadius(28)
-                    }
-                    
-                    Spacer()
-                    
-                    Menu {
-                        ForEach(tagManager.availableTags, id: \.self) { tag in
-                            Button(action: {
-                                if tagManager.isAllTag(tag) {
-                                    selectedTag = nil
-                                } else {
-                                    selectedTag = tag
-                                }
-                            }) {
-                                HStack {
-                                    Text(tag)
-                                    if (selectedTag == nil && tagManager.isAllTag(tag)) || selectedTag == tag {
-                                        Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
-                        
-                        Divider()
-                        
-                        Button(action: {
-                            showingTagEditor = true
-                        }) {
-                            Label(NSLocalizedString("edit_tags", comment: ""), systemImage: "pencil")
-                        }
-                    } label: {
-                        HStack {
-                            Image(systemName: "tag")
-                            Text(selectedTag ?? tagManager.allTag)
-                        }
-                        .foregroundColor(AppConstants.themeManager.currentTheme.color)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .cornerRadius(8)
-                    }
-                    
-                    Button(action: {
-                        if CompressionSettings.shared.defaultUseSystemCamera {
-                            showingSystemCamera = true
-                        } else {
-                            showingCamera = true
-                        }
-                    }) {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(AppConstants.themeManager.currentTheme.color)
-                            .cornerRadius(8)
-                    }
-                    .simultaneousGesture(
-                        LongPressGesture(minimumDuration: 0.5)
-                            .onEnded { _ in
-                                if CompressionSettings.shared.defaultUseSystemCamera {
-                                    showingCamera = true
-                                } else {
-                                    showingSystemCamera = true
-                                }
-                            }
-                    )
-                }
-                .padding()
                 
+                //photocard place
                 HStack(spacing: 0) {
                     if isGridView {
                         PhotoTimelineView(
@@ -253,30 +176,27 @@ struct ContentView: View {
                     }
                 }
             }
-            .navigationTitle(selectedTag == nil ? NSLocalizedString("record_all", comment: "") : String(format: NSLocalizedString("record_tag", comment: ""), selectedTag ?? ""))
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+            // 顶部空间
+            .safeAreaInset(edge: .top) {
+                GlassEffectContainer(spacing: 50.0) {
                     HStack {
-                        // 仅在测试包名时显示开发菜单
-                        if Bundle.main.bundleIdentifier == "test.org.cornradio.youlog" {
-                            Menu {
-                                Button(action: {
-                                    isContinuousCapture.toggle()
-                                    if isContinuousCapture {
-                                        startContinuousCapture()
-                                    } else {
-                                        stopContinuousCapture()
-                                    }
-                                }) {
-                                    Label(isContinuousCapture ? "停止连续拍照" : "连续拍照测试", systemImage: "camera.badge.clock")
-                                }
-                                                    } label: {
-                            Image(systemName: "hammer")
-                                .foregroundColor(AppConstants.themeManager.currentTheme.color)
-                        }
+                        // 日期筛选栏和
+                        Button(action: { showingDateFilter = true }) {
+                            HStack {
+                                Image(systemName: "calendar")
+                                Text("\(dateFormatter.string(from: startDate)) - \(dateFormatter.string(from: endDate))")
+                            }
+                            .foregroundColor(.accentColor)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(AppConstants.themeManager.currentTheme.color.opacity(0.1))
+                            .cornerRadius(28)
+                            .glassEffect()
                         }
                         
-                        // 设置菜单
+                        Spacer()
+                        
+                        // 设置菜单按钮
                         Menu {
                             Button(action: { isGridView.toggle() }) {
                                 Label(isGridView ? "列表视图" : "网格视图", systemImage: isGridView ? "square.fill.text.grid.1x2" : "square.grid.2x2")
@@ -307,17 +227,37 @@ struct ContentView: View {
                             }
                             
                             if filteredItems.count > 1 {
-                                Button(action: { 
+                                Button(action: {
                                     currentPlaybackIndex = 0
-                                    showingPlayback = true 
+                                    showingPlayback = true
                                 }) {
                                     Label(NSLocalizedString("playback_mode", comment: ""), systemImage: "play.circle")
                                 }
                             }
                             
-
-                            
                             Divider()
+                            
+                            // 仅在测试包名时显示开发菜单项
+                            if Bundle.main.bundleIdentifier == "test.org.cornradio.youlog" {
+                                Button(action: {
+                                    isContinuousCapture.toggle()
+                                    if isContinuousCapture {
+                                        startContinuousCapture()
+                                    } else {
+                                        stopContinuousCapture()
+                                    }
+                                }) {
+                                    Label(isContinuousCapture ? "停止连续拍照" : "连续拍照测试", systemImage: "camera.badge.clock")
+                                }
+                                
+                                Button(action: {
+                                    showingLiquidGlassTest = true
+                                }) {
+                                    Label("Liquid Glass 测试", systemImage: "sparkles")
+                                }
+                                
+                                Divider()
+                            }
                             
                             Button(action: { showingSupportDeveloper = true }) {
                                 Label("支持", systemImage: "cup.and.saucer")
@@ -328,10 +268,64 @@ struct ContentView: View {
                             }
                         } label: {
                             Image(systemName: "gear")
+                                .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(AppConstants.themeManager.currentTheme.color)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 8)
+                                .shadow(color: AppConstants.themeManager.currentTheme.color.opacity(0.2), radius: 2, x: 0, y: 2)
+//                                .clipShape(Circle())
+//                                .glassEffect()
                         }
                         
-                        // 拍照菜单（简化版）
+                        // tag 选择器
+                        Menu {
+                            ForEach(tagManager.availableTags, id: \.self) { tag in
+                                Button(action: {
+                                    if tagManager.isAllTag(tag) {
+                                        selectedTag = nil
+                                    } else {
+                                        selectedTag = tag
+                                    }
+                                }) {
+                                    HStack {
+                                        Text(tag)
+                                        if (selectedTag == nil && tagManager.isAllTag(tag)) || selectedTag == tag {
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            Divider()
+                            
+                            Button(action: {
+                                showingTagEditor = true
+                            }) {
+                                Label(NSLocalizedString("edit_tags", comment: ""), systemImage: "pencil")
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "tag")
+                                Text(selectedTag ?? tagManager.allTag)
+                            }
+                            .foregroundColor(AppConstants.themeManager.currentTheme.color)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .cornerRadius(8)
+                           .glassEffect()
+                        }
+
+                       
+                        
+                    }
+                    .padding()
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                GlassEffectContainer(spacing: 60.0) {
+                    HStack(spacing: 60) {
+                        
+                        // 添加菜单按钮
                         Menu {
                             Button(action: { showingCamera = true }) {
                                 Label(NSLocalizedString("take_photo", comment: ""), systemImage: "camera")
@@ -345,10 +339,6 @@ struct ContentView: View {
                                 Label(NSLocalizedString("select_from_album", comment: ""), systemImage: "photo.on.rectangle")
                             }
                             
-                            // Button(action: { createNoteOnlyItem() }) {
-                            //     Label("纯笔记", systemImage: "square.and.pencil")
-                            // }
-                            
                             Divider()
                             
                             if !filteredItems.isEmpty {
@@ -358,8 +348,16 @@ struct ContentView: View {
                             }
                         } label: {
                             Image(systemName: "plus")
+                                .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(AppConstants.themeManager.currentTheme.color)
+                                .frame(width: 56, height: 56)
+                                .clipShape(Circle())
+                                .glassEffect()
                         }
+                        // + btn over
+                        
+
+                        
                     }
                 }
             }
@@ -430,6 +428,9 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingCompressionSettings) {
                 CompressionSettingsView()
+            }
+            .sheet(isPresented: $showingLiquidGlassTest) {
+                LiquidGlassTestView()
             }
         }
     }
