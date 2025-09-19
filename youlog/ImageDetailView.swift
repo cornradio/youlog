@@ -129,7 +129,7 @@ struct ImageDetailView: View {
         let resizedImage = renderer.image { context in
             // 填充背景色为黑色，避免白线
             context.cgContext.setFillColor(UIColor.black.cgColor)
-            context.cgContext.fill(CGRect(origin: .zero, size: newSize))
+//            context.cgContext(CGRect(origin: .zero, size: newSize))
             
             context.cgContext.interpolationQuality = .high // 使用高质量插值，以得到更好的缩放结果
             image.draw(in: CGRect(origin: .zero, size: newSize))
@@ -152,17 +152,19 @@ struct ImageDetailView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            // Color.black.ignoresSafeArea()
             ZoomableImageView(image: image, isFlipped: isFlipped, currentIndex: currentIndex) // 传入 currentIndex
-                .ignoresSafeArea()
+                // .ignoresSafeArea()
+                
                 .overlay(bottomMenu(), alignment: .bottom)
+            Spacer()
         }
     }
 
     private func bottomMenu() -> some View {
         HStack(spacing: 18) {
             Button(action: navigateToPrevious) {
-                Image(systemName: "chevron.left.circle.fill")
+                Image(systemName: "chevron.left")
                     .font(.title2)
                     .foregroundColor(.white)
             }
@@ -170,20 +172,20 @@ struct ImageDetailView: View {
                 .font(.subheadline)
                 .foregroundColor(.white)
             Button(action: navigateToNext) {
-                Image(systemName: "chevron.right.circle.fill")
+                Image(systemName: "chevron.right")
                     .font(.title2)
                     .foregroundColor(.white)
             }
             Divider()
                 .frame(height: 20)
                 .background(Color.white.opacity(0.3))
-            Button(action: {
-                isFlipped.toggle()
-            }) {
-                Image(systemName: "arrow.left.and.right.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(.white)
-            }
+            // Button(action: { //反转
+            //     isFlipped.toggle()
+            // }) {
+            //     Image(systemName: "arrow.left.and.right") fill
+            //         .font(.title2)
+            //         .foregroundColor(.white)
+            // }
             HStack {
                 if isCompressing {
                     ProgressView()
@@ -209,16 +211,17 @@ struct ImageDetailView: View {
                     window.rootViewController?.present(av, animated: true, completion: nil)
                 }
             }) {
-                Image(systemName: "square.and.arrow.up.circle.fill")
+                Image(systemName: "square.and.arrow.up")
                     .font(.title2)
                     .foregroundColor(.white)
             }
         }
+
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .background(Color.black.opacity(0.7))
-        .clipShape(Capsule())
-        .padding(.bottom, 20)
+        // .clipShape(Capsule())
+        .glassEffect()
+        // .padding(.bottom, 20)
         .alert("压缩图片", isPresented: $showCompressionAlert) {
             Button("取消", role: .cancel) { }
             Button("压缩") {
@@ -226,11 +229,6 @@ struct ImageDetailView: View {
             }
         } message: {
             Text("压缩后图片质量会降低，但文件大小会减小。是否继续？")
-        }
-        .alert("压缩完成", isPresented: $showCompressionSuccess) {
-            Button("确定") { }
-        } message: {
-            Text("图片已成功压缩")
         }
     }
 }
