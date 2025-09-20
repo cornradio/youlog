@@ -153,18 +153,22 @@ struct ImageDetailView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            ZoomableImageView(image: image, isFlipped: isFlipped, currentIndex: currentIndex) // 传入 currentIndex
-                // .ignoresSafeArea()
-                
-                .overlay(bottomMenu(), alignment: .bottom)
-            Spacer()
+
+            ZoomableImageView(
+                image: image,
+                isFlipped: isFlipped,
+                currentIndex: currentIndex
+            ) 
+//            .ignoresSafeArea()
+            .overlay(bottomMenu(), alignment: .bottom) // 菜单覆盖在底部
         }
     }
+
 
     private func bottomMenu() -> some View {
         HStack(spacing: 18) {
             Button(action: navigateToPrevious) {
-                Image(systemName: "chevron.left")
+                Image(systemName: "chevron.left.circle.fill")
                     .font(.title2)
                     .foregroundColor(.white)
             }
@@ -172,14 +176,14 @@ struct ImageDetailView: View {
                 .font(.subheadline)
                 .foregroundColor(.white)
             Button(action: navigateToNext) {
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.right.circle.fill")
                     .font(.title2)
                     .foregroundColor(.white)
             }
             Divider()
                 .frame(height: 20)
                 .background(Color.white.opacity(0.3))
-            // Button(action: { //反转
+            // Button(action: { //反转 功能失效，备注
             //     isFlipped.toggle()
             // }) {
             //     Image(systemName: "arrow.left.and.right") fill
@@ -219,7 +223,7 @@ struct ImageDetailView: View {
 
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        // .clipShape(Capsule())
+     .clipShape(Capsule())
         .glassEffect()
         // .padding(.bottom, 20)
         .alert("压缩图片", isPresented: $showCompressionAlert) {
