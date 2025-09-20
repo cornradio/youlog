@@ -178,7 +178,7 @@ struct ContentView: View {
             }
             // 顶部空间
             .safeAreaInset(edge: .top) {
-                GlassEffectContainer(spacing: 50.0) {
+                GlassEffectContainer() {
                     HStack {
                         // 日期筛选栏和
                         Button(action: { showingDateFilter = true }) {
@@ -189,14 +189,13 @@ struct ContentView: View {
                             .foregroundColor(AppConstants.themeManager.currentTheme.color)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(AppConstants.themeManager.currentTheme.color.opacity(0.1))
+                            // .background(AppConstants.themeManager.currentTheme.color.opacity(0.1))
                             .cornerRadius(28)
-                            .glassEffect()
+                            // .glassEffect(.regular.interactive(true))
                         }
                         
                         Spacer()
-                        
-                        // 设置菜单按钮
+                                                // 设置菜单按钮
                         Menu {
                             Button(action: { isGridView.toggle() }) {
                                 Label(isGridView ? "列表视图" : "网格视图", systemImage: isGridView ? "square.fill.text.grid.1x2" : "square.grid.2x2")
@@ -270,13 +269,12 @@ struct ContentView: View {
                             Image(systemName: "gear")
                                 .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(AppConstants.themeManager.currentTheme.color)
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 8)
-                                .shadow(color: AppConstants.themeManager.currentTheme.color.opacity(0.2), radius: 2, x: 0, y: 2)
-//                                .clipShape(Circle())
-//                                .glassEffect()
+                                //  .frame(width: 56, height: 56)
+                            //    .clipShape(Circle())
+                            //    .glassEffect()
                         }
-                        
+                        // 设置菜单按钮 over
+
                         // tag 选择器
                         Menu {
                             ForEach(tagManager.availableTags, id: \.self) { tag in
@@ -311,10 +309,10 @@ struct ContentView: View {
                             .foregroundColor(AppConstants.themeManager.currentTheme.color)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(AppConstants.themeManager.currentTheme.color.opacity(0.1))
+                            // .background(AppConstants.themeManager.currentTheme.color.opacity(0.1)) //背景色
                             .cornerRadius(28)
                             .cornerRadius(8)
-                           .glassEffect()
+                        //    .glassEffect(.regular.interactive(true))
 
                         }
 
@@ -323,11 +321,15 @@ struct ContentView: View {
                     }
                     .padding()
                 }
+                .glassEffect(.regular.interactive(true))
+
             }
+            //底部空间
             .safeAreaInset(edge: .bottom) {
                 GlassEffectContainer(spacing: 60.0) {
-                    HStack(spacing: 60) {
-                        
+                    HStack() {
+
+                        // Spacer()
                         // 添加菜单按钮
                         Menu {
                             Button(action: { showingCamera = true }) {
@@ -1221,8 +1223,6 @@ struct NetworkTransferView: View {
                         .font(.headline)
                     
                     Text("• 将照片保存到文件夹（文件App-我的iPhone-youlog）")
-                    Text("• 您可以直接在文件App中访问和分享照片")
-                    Text("• 也可以在文件App中压缩打包，然后备份到其他地方")
                 }
                 .padding()
                 .background(AppConstants.themeManager.currentTheme.color.opacity(0.1))

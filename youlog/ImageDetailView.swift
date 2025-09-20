@@ -152,7 +152,7 @@ struct ImageDetailView: View {
 
     var body: some View {
         ZStack {
-            // Color.black.ignoresSafeArea()
+            Color.black.ignoresSafeArea()
             ZoomableImageView(image: image, isFlipped: isFlipped, currentIndex: currentIndex) // 传入 currentIndex
                 // .ignoresSafeArea()
                 
