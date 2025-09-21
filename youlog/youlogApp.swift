@@ -10,6 +10,8 @@ import SwiftData
 
 @main
 struct youlogApp: App {
+    @StateObject private var themeManager = AppConstants.themeManager
+    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -26,6 +28,7 @@ struct youlogApp: App {
     var body: some Scene {
         WindowGroup {
             MainView()
+                .preferredColorScheme(themeManager.alwaysUseDarkTheme ? .dark : nil)
         }
         .modelContainer(sharedModelContainer)
     }

@@ -63,13 +63,24 @@ class ThemeManager: ObservableObject {
         }
     }
     
+    @Published var alwaysUseDarkTheme: Bool {
+        didSet {
+            UserDefaults.standard.set(alwaysUseDarkTheme, forKey: "alwaysUseDarkTheme")
+        }
+    }
+    
     init() {
         let savedTheme = UserDefaults.standard.string(forKey: "selectedTheme") ?? AppTheme.blue.rawValue
         self.currentTheme = AppTheme(rawValue: savedTheme) ?? .blue
+        self.alwaysUseDarkTheme = UserDefaults.standard.bool(forKey: "alwaysUseDarkTheme")
     }
     
     func setTheme(_ theme: AppTheme) {
         currentTheme = theme
+    }
+    
+    func setAlwaysUseDarkTheme(_ enabled: Bool) {
+        alwaysUseDarkTheme = enabled
     }
 }
 

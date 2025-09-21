@@ -7,6 +7,25 @@ struct ThemeSettingsView: View {
     var body: some View {
         NavigationView {
             List {
+                Section(header: Text("外观设置")) {
+                    HStack {
+                        Image(systemName: "moon.fill")
+                            .foregroundColor(.primary)
+                            .font(.title2)
+                        
+                        Text("永远使用暗色主题")
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: Binding(
+                            get: { themeManager.alwaysUseDarkTheme },
+                            set: { themeManager.setAlwaysUseDarkTheme($0) }
+                        ))
+                        .toggleStyle(SwitchToggleStyle(tint: themeManager.currentTheme.color))
+                    }
+                }
+                
                 Section(header: Text("选择主题色")) {
                     ForEach(AppTheme.allCases, id: \.self) { theme in
                         HStack {
@@ -88,4 +107,4 @@ struct ThemeSettingsView: View {
 
 #Preview {
     ThemeSettingsView()
-} 
+}
