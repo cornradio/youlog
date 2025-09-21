@@ -44,7 +44,9 @@ class CompressionSettings: ObservableObject {
     
     // 获取目标宽度（基于屏幕宽度和倍数）
     var targetWidth: CGFloat {
-        return UIScreen.main.bounds.width * screenWidthMultiplier
+        let myscreen:UIScreen = UIScreen()
+        let screenWidth = myscreen.bounds.width
+        return screenWidth * screenWidthMultiplier
     }
     
     // 重置为默认设置

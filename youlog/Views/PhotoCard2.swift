@@ -184,7 +184,7 @@ struct PhotoCard2: View {
                             Image(systemName: "ellipsis.circle")
                                 .foregroundColor(AppConstants.themeManager.currentTheme.color)
                             Text(NSLocalizedString("more", comment: ""))
-                                .foregroundColor(AppConstants.themeManager.currentTheme.color)	
+                                .foregroundColor(AppConstants.themeManager.currentTheme.color)
                                 
                         }
                         .padding( 4)

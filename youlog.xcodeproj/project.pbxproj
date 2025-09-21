@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		6919A8CF2E7F9F760047EDF1 /* DataStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6919A8CE2E7F9F760047EDF1 /* DataStatsView.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		69B46EE72D96DF340087C40D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +28,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		6919A8CE2E7F9F760047EDF1 /* DataStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStatsView.swift; sourceTree = "<group>"; };
 		69B46ED22D96DF320087C40D /* youlog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = youlog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		69B46EE62D96DF340087C40D /* youlogTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = youlogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		69B46EF02D96DF340087C40D /* youlogUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = youlogUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -92,6 +97,7 @@
 				69B46EE92D96DF340087C40D /* youlogTests */,
 				69B46EF32D96DF340087C40D /* youlogUITests */,
 				69B46ED32D96DF320087C40D /* Products */,
+				6919A8CE2E7F9F760047EDF1 /* DataStatsView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -250,6 +256,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6919A8CF2E7F9F760047EDF1 /* DataStatsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
