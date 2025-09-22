@@ -32,7 +32,7 @@ struct CompressionSettingsView: View {
                                 .font(.caption)
                         }
                         
-                        Text("目标宽度: \(Int(settings.targetWidth))px")
+                        Text("图片短边目标宽度: \(Int(settings.targetWidth))px")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -75,16 +75,7 @@ struct CompressionSettingsView: View {
                             .foregroundColor(.secondary)
                     }
                 }
-                
-                Section(header: Text("相机设置")) {
-                    Toggle("默认使用系统相机拍照", isOn: $settings.defaultUseSystemCamera)
-                    
-                    if settings.defaultUseSystemCamera {
-                        Text("开启后，点击相机按钮将直接使用系统相机，无需长按")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
+
                 
                 Section {
                     Button("重置为默认设置") {

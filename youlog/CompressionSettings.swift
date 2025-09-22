@@ -36,23 +36,22 @@ class CompressionSettings: ObservableObject {
     
     private init() {
         // 从 UserDefaults 读取保存的设置，设置默认值
-        self.screenWidthMultiplier = UserDefaults.standard.object(forKey: "compressionScreenWidthMultiplier") as? Double ?? 1.5
-        self.compressionQuality = UserDefaults.standard.object(forKey: "compressionQuality") as? Double ?? 0.7
+        self.screenWidthMultiplier = UserDefaults.standard.object(forKey: "compressionScreenWidthMultiplier") as? Double ?? 3.0
+        self.compressionQuality = UserDefaults.standard.object(forKey: "compressionQuality") as? Double ?? 0.8
         self.autoCompressSystemCamera = UserDefaults.standard.bool(forKey: "autoCompressSystemCamera")
         self.defaultUseSystemCamera = UserDefaults.standard.bool(forKey: "defaultUseSystemCamera")
     }
     
     // 获取目标宽度（基于屏幕宽度和倍数）
     var targetWidth: CGFloat {
-        let myscreen:UIScreen = UIScreen()
-        let screenWidth = myscreen.bounds.width
+        let screenWidth = UIScreen.main.bounds.width
         return screenWidth * screenWidthMultiplier
     }
     
     // 重置为默认设置
     func resetToDefaults() {
-        screenWidthMultiplier = 1.5
-        compressionQuality = 0.7
+        screenWidthMultiplier = 3.0
+        compressionQuality = 0.8
         autoCompressSystemCamera = false
         defaultUseSystemCamera = false
     }

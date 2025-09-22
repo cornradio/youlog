@@ -311,7 +311,8 @@ struct PhotoCard: View {
                     // 压缩完成后的回调：更新对应的 Item 的图片数据
                     if index < allItems.count {
                         let targetItem = allItems[index]
-                        if let compressedData = compressedImage.jpegData(compressionQuality: 0.8) {
+                        let settings = CompressionSettings.shared
+                        if let compressedData = compressedImage.jpegData(compressionQuality: settings.compressionQuality) {
                             targetItem.imageData = compressedData
                         }
                     }

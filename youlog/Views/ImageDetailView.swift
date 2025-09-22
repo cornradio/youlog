@@ -20,7 +20,8 @@ struct ImageDetailView: View {
         // 或者更准确的方法是存储图片时记录其编码大小。
         // 为了演示，这里我们用一个默认的质量再次编码来估算当前显示图片的文件大小。
         // 如果图片是PNG或其他格式，这里需要调整。假设都是JPEG。
-        let data = image.jpegData(compressionQuality: 0.8) // 使用一个固定质量来估算当前显示图片的大小
+        let settings = CompressionSettings.shared
+        let data = image.jpegData(compressionQuality: settings.compressionQuality)
         let sizeInBytes = data?.count ?? 0
         if sizeInBytes >= 1024 * 1024 {
             return String(format: "%.1f MB", Double(sizeInBytes) / (1024 * 1024))
@@ -53,7 +54,8 @@ struct ImageDetailView: View {
             let originalImage = images[currentIndex]
             
             // 获取原始图片大小
-            guard let originalData = originalImage.jpegData(compressionQuality: 0.8) else {
+            let settings = CompressionSettings.shared
+            guard let originalData = originalImage.jpegData(compressionQuality: settings.compressionQuality) else {
                 DispatchQueue.main.async {
                     isCompressing = false
                 }
@@ -63,7 +65,7 @@ struct ImageDetailView: View {
             
             if let compressedImage = forceCompressImage(originalImage) {
                 // 获取压缩后图片大小
-                guard let compressedData = compressedImage.jpegData(compressionQuality: 0.8) else {
+                guard let compressedData = compressedImage.jpegData(compressionQuality: settings.compressionQuality) else {
                     DispatchQueue.main.async {
                         isCompressing = false
                     }
@@ -92,6 +94,7 @@ struct ImageDetailView: View {
                 DispatchQueue.main.async {
                     isCompressing = false
                     // 可以在这里显示压缩失败的提示
+                    showCompressionSuccess = false
                 }
             }
         }
@@ -105,21 +108,13 @@ struct ImageDetailView: View {
         let compressionQuality: CGFloat = settings.compressionQuality
         
         let originalSize = image.size
-        
-        var newSize: CGSize
-        if originalSize.width > targetWidth {
-            let ratio = targetWidth / originalSize.width
-            newSize = CGSize(
-                width: targetWidth,
-                height: originalSize.height * ratio
-            )
-        } else {
-            // 如果原始宽度小于目标宽度，也根据比例缩小，但至少保持一定的尺寸，
-            // 关键在于后续的质量压缩。或者也可以选择不尺寸缩放，只质量压缩。
-            // 这里为了确保有尺寸压缩，统一按照比例缩放。
-            // 更好的做法是设定一个最大宽度/高度限制，如果超出就缩放。
-             newSize = originalSize // 不进行尺寸放大，只进行质量压缩
-        }
+        // 以“最长边不超过 targetWidth”为准，保持纵横比；不放大
+        let shortside = min(originalSize.width, originalSize.height)
+        let scale = min(1.0, targetWidth / max(shortside, 1)) 
+        let newSize = CGSize(
+            width: originalSize.width * scale,
+            height: originalSize.height * scale
+        )
         
         // 重新采样的图片
         let format = UIGraphicsImageRendererFormat()

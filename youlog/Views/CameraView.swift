@@ -68,11 +68,11 @@ private struct CameraPreviewView: View {
         case .portrait:
             return .degrees(0)
         case .portraitUpsideDown:
-            return .degrees(180)
+            return .degrees(0)
         case .landscapeLeft:
-            return .degrees(-90)
+            return .degrees(0)
         case .landscapeRight:
-            return .degrees(90)
+            return .degrees(0)
         default:
             return .degrees(0)
         }

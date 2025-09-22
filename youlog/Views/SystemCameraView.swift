@@ -24,6 +24,7 @@ struct SystemCameraView: UIViewControllerRepresentable {
         picker.delegate = context.coordinator
         picker.sourceType = .camera
         picker.cameraCaptureMode = .photo
+        picker.modalPresentationStyle = .fullScreen
         return picker
     }
     
