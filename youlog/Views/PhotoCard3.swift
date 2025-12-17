@@ -14,6 +14,7 @@ struct PhotoCard3: View {
     @State private var currentImageIndex: Int = 0
     @State private var showingDatePicker = false
     @State private var selectedDate: Date = Date()
+    @State private var decodedImage: UIImage? // Store decoded image
     
     init(item: Item, allItems: [Item] = []) {
         self.item = item
@@ -28,12 +29,10 @@ struct PhotoCard3: View {
     }
     
     var body: some View {
-        // 这里的 NavigationStack 主要是为了配合 navigationDestination 使用
-        // 在 Grid 中嵌套 NavigationStack 虽然不推荐但能保持现有的 FullScreen 逻辑一致性
-        NavigationStack {
-            GeometryReader { geo in
-                if let imageData = item.imageData,
-                   let uiImage = UIImage(data: imageData) {
+        // Removed nested NavigationStack to fix performance/freeze issues
+        GeometryReader { geo in
+            Group {
+                if let uiImage = decodedImage {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFill()
@@ -45,7 +44,7 @@ struct PhotoCard3: View {
                             showingFullScreen = true
                         }
                         .contextMenu {
-                            // 长按显示操作菜单 (使用 MenuContent)
+                            // Long press context menu
                             MenuContent(
                                 uiImage: uiImage,
                                 item: item,
@@ -67,83 +66,112 @@ struct PhotoCard3: View {
                             Image(systemName: "photo")
                                 .foregroundColor(.gray)
                         }
+                        .task(id: item.id) {
+                            await loadThumbnail(targetSize: CGSize(width: 150, height: 150))
+                        }
                 }
             }
-            .aspectRatio(1, contentMode: .fit) // 保持正方形
+        }
+        .aspectRatio(1, contentMode: .fit)
+        
+        // MARK: - Popups
+        .alert(NSLocalizedString("delete_photo", comment: ""), isPresented: $showingDeleteAlert) {
+            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) { }
+            Button(NSLocalizedString("delete", comment: ""), role: .destructive) {
+                modelContext.delete(item)
+            }
+        } message: {
+            Text(NSLocalizedString("delete_confirm_photo", comment: ""))
+        }
+        .alert(NSLocalizedString("save_success", comment: ""), isPresented: $showingSaveSuccess) {
+            Button(NSLocalizedString("ok", comment: ""), role: .cancel) { }
+        } message: {
+            Text(NSLocalizedString("saved_to_photos", comment: ""))
+        }
+        .navigationDestination(isPresented: $showingFullScreen) {
+            ImageDetailView(items: allItems, currentIndex: $currentImageIndex) { compressedImage, index in
+                if index < allItems.count {
+                    let targetItem = allItems[index]
+                    if let compressedData = compressedImage.jpegData(compressionQuality: 0.8) {
+                        targetItem.imageData = compressedData
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingTagEditor) {
+            TagEditorView(selectedTag: $selectedTag)
+                .onDisappear {
+                    item.tag = selectedTag
+                }
+        }
+        .sheet(isPresented: $showingNoteEditor) {
+            NoteEditorView(note: $editedNote)
+                .onAppear {
+                    editedNote = item.note ?? ""
+                }
+                .onDisappear {
+                    item.note = editedNote
+                }
+        }
+        .sheet(isPresented: $showingDatePicker) {
+            NavigationView {
+                VStack(spacing: 20) {
+                    VStack(spacing: 16) {
+                        DatePicker("", selection: $selectedDate, displayedComponents: [.date])
+                            .datePickerStyle(.graphical)
+                            .labelsHidden()
+                        Divider()
+                        DatePicker("", selection: $selectedDate, displayedComponents: [.hourAndMinute])
+                            .datePickerStyle(.wheel)
+                            .labelsHidden()
+                    }
+                    Spacer()
+                    Text("修改后可能需要重新筛选找到照片")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding()
+                .navigationTitle("修改时间")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("取消") { showingDatePicker = false }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("保存") {
+                            item.timestamp = selectedDate
+                            showingDatePicker = false
+                        }
+                    }
+                }
+            }
+            .onAppear { selectedDate = item.timestamp }
+        }
+    }
+    
+    private func loadThumbnail(targetSize: CGSize) async {
+        guard let imageData = item.imageData else { return }
+        
+        let result = await Task.detached(priority: .userInitiated) { () -> UIImage? in
+            let options: [CFString: Any] = [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceShouldCacheImmediately: true,
+                kCGImageSourceThumbnailMaxPixelSize: max(targetSize.width, targetSize.height) * 2 // Retain quality for retina
+            ]
             
-            // MARK: - 弹窗逻辑
-            .alert(NSLocalizedString("delete_photo", comment: ""), isPresented: $showingDeleteAlert) {
-                Button(NSLocalizedString("cancel", comment: ""), role: .cancel) { }
-                Button(NSLocalizedString("delete", comment: ""), role: .destructive) {
-                    modelContext.delete(item)
-                }
-            } message: {
-                Text(NSLocalizedString("delete_confirm_photo", comment: ""))
+            guard let source = CGImageSourceCreateWithData(imageData as CFData, nil),
+                  let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+                return nil
             }
-            .alert(NSLocalizedString("save_success", comment: ""), isPresented: $showingSaveSuccess) {
-                Button(NSLocalizedString("ok", comment: ""), role: .cancel) { }
-            } message: {
-                Text(NSLocalizedString("saved_to_photos", comment: ""))
-            }
-            .navigationDestination(isPresented: $showingFullScreen) {
-                ImageDetailView(items: allItems, currentIndex: $currentImageIndex) { compressedImage, index in
-                    if index < allItems.count {
-                        let targetItem = allItems[index]
-                        if let compressedData = compressedImage.jpegData(compressionQuality: 0.8) {
-                            targetItem.imageData = compressedData
-                        }
-                    }
-                }
-            }
-            .sheet(isPresented: $showingTagEditor) {
-                TagEditorView(selectedTag: $selectedTag)
-                    .onDisappear {
-                        item.tag = selectedTag
-                    }
-            }
-            .sheet(isPresented: $showingNoteEditor) {
-                NoteEditorView(note: $editedNote)
-                    .onAppear {
-                        editedNote = item.note ?? ""
-                    }
-                    .onDisappear {
-                        item.note = editedNote
-                    }
-            }
-            .sheet(isPresented: $showingDatePicker) {
-                NavigationView {
-                    VStack(spacing: 20) {
-                        VStack(spacing: 16) {
-                            DatePicker("", selection: $selectedDate, displayedComponents: [.date])
-                                .datePickerStyle(.graphical)
-                                .labelsHidden()
-                            Divider()
-                            DatePicker("", selection: $selectedDate, displayedComponents: [.hourAndMinute])
-                                .datePickerStyle(.wheel)
-                                .labelsHidden()
-                        }
-                        Spacer()
-                        Text("修改后可能需要重新筛选找到照片")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding()
-                    .navigationTitle("修改时间")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            Button("取消") { showingDatePicker = false }
-                        }
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("保存") {
-                                item.timestamp = selectedDate
-                                showingDatePicker = false
-                            }
-                        }
-                    }
-                }
-                .onAppear { selectedDate = item.timestamp }
+            
+            return UIImage(cgImage: cgImage)
+        }.value
+        
+        if let image = result {
+            await MainActor.run {
+                self.decodedImage = image
             }
         }
     }
