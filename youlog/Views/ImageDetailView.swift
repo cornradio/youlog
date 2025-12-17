@@ -3,6 +3,7 @@ import UIKit // 确保导入UIKit，因为UIImage和UIGraphicsImageRenderer都�
 
 struct ImageDetailView: View {
     let images: [UIImage]  // 图片数组
+    @Environment(\.dismiss) private var dismiss
     @Binding var currentIndex: Int  // 当前显示的图片索引
     @State private var isFlipped: Bool = false
     @State private var showCompressionAlert = false
@@ -157,13 +158,26 @@ struct ImageDetailView: View {
 //            .ignoresSafeArea()
             .overlay(bottomMenu(), alignment: .bottom) // 菜单覆盖在底部
         }
+        .navigationBarBackButtonHidden(true)
     }
-
 
     private func bottomMenu() -> some View {
         HStack(spacing: 18) {
+            // Close Button
+            Button(action: {
+                dismiss()
+            }) {
+                Image(systemName: "xmark.circle")
+                    .font(.title2)
+                    .foregroundColor(.red)
+            }
+            
+            Divider()
+                .frame(height: 20)
+                .background(Color.white.opacity(0.3))
+                
             Button(action: navigateToPrevious) {
-                Image(systemName: "chevron.left.circle.fill")
+                Image(systemName: "chevron.left.circle")
                     .font(.title2)
                     .foregroundColor(.white)
             }
@@ -171,7 +185,7 @@ struct ImageDetailView: View {
                 .font(.subheadline)
                 .foregroundColor(.white)
             Button(action: navigateToNext) {
-                Image(systemName: "chevron.right.circle.fill")
+                Image(systemName: "chevron.right.circle")
                     .font(.title2)
                     .foregroundColor(.white)
             }
@@ -212,7 +226,7 @@ struct ImageDetailView: View {
             }) {
                 Image(systemName: "square.and.arrow.up.circle.fill")
                     .font(.title2)
-                    .foregroundColor(.white)
+                    .foregroundColor(.blue)
             }
         }
 
@@ -253,16 +267,12 @@ struct ZoomableImageView: UIViewRepresentable {
         imageView.tag = 99
         scrollView.addSubview(imageView)
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        // 修正：约束 should be to scrollView's frameLayoutGuide
-        // 或者直接让 imageView 的大小等于 scrollView 的 contentSize
-        // 为了简单起见，这里让 imageView 填充 scrollView 的可视区域
+        
         NSLayoutConstraint.activate([
             imageView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
             imageView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
             imageView.topAnchor.constraint(equalTo: scrollView.topAnchor),
             imageView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            // Important: These two constraints make the image view "center" in the scroll view's content area
-            // and act as the content size for the scroll view. Without them, zooming might behave unexpectedly.
             imageView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
             imageView.heightAnchor.constraint(equalTo: scrollView.heightAnchor)
         ])
