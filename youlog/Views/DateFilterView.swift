@@ -40,79 +40,81 @@ struct DateFilterView: View {
             Form {
 
                 
+                Section {
+                    NavigationLink(destination: AllImagesView(items: items)) {
+                        Label("查看所有图片预览", systemImage: "photo.stack")
+                    }
+                }
+                
                 Section(header: Text(NSLocalizedString("quick_select", comment: ""))) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
+                            // 今天
                             QuickDateButton(
-                                title: NSLocalizedString("today", comment: ""),
-                                isSelected: selectedButton == NSLocalizedString("today", comment: ""),
+                                title: "今天",
+                                isSelected: selectedButton == "今天",
                                 action: {
                                     startDate = startOfDay(Date())
                                     endDate = endOfDay(Date())
-                                    selectedButton = NSLocalizedString("today", comment: "")
+                                    selectedButton = "今天"
                                     dismiss()
                                 }
                             )
                             
+                            // 近三天
                             QuickDateButton(
-                                title: NSLocalizedString("yesterday", comment: ""),
-                                isSelected: selectedButton == NSLocalizedString("yesterday", comment: ""),
+                                title: "近三天",
+                                isSelected: selectedButton == "近三天",
                                 action: {
-                                    let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) ?? Date()
-                                    startDate = startOfDay(yesterday)
-                                    endDate = endOfDay(yesterday)
-                                    selectedButton = NSLocalizedString("yesterday", comment: "")
+                                    let threeDaysAgo = calendar.date(byAdding: .day, value: -2, to: Date()) ?? Date()
+                                    startDate = startOfDay(threeDaysAgo)
+                                    endDate = endOfDay(Date())
+                                    selectedButton = "近三天"
                                     dismiss()
                                 }
                             )
                             
+                            // 近一周
                             QuickDateButton(
-                                title: NSLocalizedString("day_before_yesterday", comment: ""),
-                                isSelected: selectedButton == NSLocalizedString("day_before_yesterday", comment: ""),
+                                title: "近一周",
+                                isSelected: selectedButton == "近一周",
                                 action: {
-                                    let dayBeforeYesterday = calendar.date(byAdding: .day, value: -2, to: Date()) ?? Date()
-                                    startDate = startOfDay(dayBeforeYesterday)
-                                    endDate = endOfDay(dayBeforeYesterday)
-                                    selectedButton = NSLocalizedString("day_before_yesterday", comment: "")
+                                    let oneWeekAgo = calendar.date(byAdding: .day, value: -6, to: Date()) ?? Date()
+                                    startDate = startOfDay(oneWeekAgo)
+                                    endDate = endOfDay(Date())
+                                    selectedButton = "近一周"
                                     dismiss()
                                 }
                             )
                             
+                            // 近一个月
                             QuickDateButton(
-                                title: NSLocalizedString("current_month", comment: ""),
-                                isSelected: selectedButton == NSLocalizedString("current_month", comment: ""),
+                                title: "近一个月",
+                                isSelected: selectedButton == "近一个月",
                                 action: {
-                                    let components = calendar.dateComponents([.year, .month], from: Date())
-                                    startDate = calendar.date(from: components) ?? Date()
-                                    endDate = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startDate) ?? Date()
-                                    selectedButton = NSLocalizedString("current_month", comment: "")
+                                    let oneMonthAgo = calendar.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+                                    startDate = startOfDay(oneMonthAgo)
+                                    endDate = endOfDay(Date())
+                                    selectedButton = "近一个月"
                                     dismiss()
                                 }
                             )
                             
+                            // 全部 (2025-01-01 至今)
                             QuickDateButton(
-                                title: NSLocalizedString("current_quarter", comment: ""),
-                                isSelected: selectedButton == NSLocalizedString("current_quarter", comment: ""),
+                                title: "全部",
+                                isSelected: selectedButton == "全部",
                                 action: {
-                                    let components = calendar.dateComponents([.year], from: Date())
-                                    let year = components.year ?? calendar.component(.year, from: Date())
-                                    let quarter = (calendar.component(.month, from: Date()) - 1) / 3
-                                    startDate = calendar.date(from: DateComponents(year: year, month: quarter * 3 + 1)) ?? Date()
-                                    endDate = calendar.date(byAdding: DateComponents(month: 3, day: -1), to: startDate) ?? Date()
-                                    selectedButton = NSLocalizedString("current_quarter", comment: "")
-                                    dismiss()
-                                }
-                            )
-                            
-                            QuickDateButton(
-                                title: NSLocalizedString("current_year", comment: ""),
-                                isSelected: selectedButton == NSLocalizedString("current_year", comment: ""),
-                                action: {
-                                    let components = calendar.dateComponents([.year], from: Date())
-                                    startDate = calendar.date(from: components) ?? Date()
-                                    endDate = calendar.date(byAdding: DateComponents(year: 1, day: -1), to: startDate) ?? Date()
-                                    selectedButton = NSLocalizedString("current_year", comment: "")
-                                    dismiss()
+                                    var components = DateComponents()
+                                    components.year = 2025
+                                    components.month = 1
+                                    components.day = 1
+                                    if let start = calendar.date(from: components) {
+                                        startDate = startOfDay(start)
+                                        endDate = endOfDay(Date())
+                                        selectedButton = "全部"
+                                        dismiss()
+                                    }
                                 }
                             )
                         }

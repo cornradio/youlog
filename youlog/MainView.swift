@@ -131,7 +131,7 @@ struct MainView: View {
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MM/dd"
+        formatter.dateFormat = "MM.dd"
         return formatter
     }()
     
@@ -153,6 +153,52 @@ struct MainView: View {
             
             return dateFilter && tagFilter
         }
+    }
+    
+    private var dateRangeText: String {
+        let calendar = Calendar.current
+        let today = Date()
+        let startOfToday = calendar.startOfDay(for: today)
+        
+        // Helper to check if two dates are same day
+        func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
+            calendar.isDate(date1, inSameDayAs: date2)
+        }
+        
+        // Check "Today"
+        if isSameDay(startDate, today) && isSameDay(endDate, today) {
+            return "今天"
+        }
+        
+        // Check "Recent 3 Days"
+        if let threeDaysAgo = calendar.date(byAdding: .day, value: -2, to: startOfToday),
+           isSameDay(startDate, threeDaysAgo) && isSameDay(endDate, today) {
+            return "近三天"
+        }
+        
+        // Check "Recent 1 Week"
+        if let oneWeekAgo = calendar.date(byAdding: .day, value: -6, to: startOfToday),
+           isSameDay(startDate, oneWeekAgo) && isSameDay(endDate, today) {
+            return "近一周"
+        }
+        
+        // Check "Recent 1 Month"
+        if let oneMonthAgo = calendar.date(byAdding: .month, value: -1, to: startOfToday),
+           isSameDay(startDate, oneMonthAgo) && isSameDay(endDate, today) {
+            return "近一个月"
+        }
+        
+        // Check "All" (2025-01-01 to Today)
+        var components = DateComponents()
+        components.year = 2025
+        components.month = 1
+        components.day = 1
+        if let allStartDate = calendar.date(from: components),
+           isSameDay(startDate, allStartDate) && isSameDay(endDate, today) {
+            return "全部"
+        }
+        
+        return "\(dateFormatter.string(from: startDate)) - \(dateFormatter.string(from: endDate))"
     }
     
     var body: some View {
@@ -184,7 +230,7 @@ struct MainView: View {
                         Button(action: { showingDateFilter = true }) {
                             HStack {
                                 Image(systemName: "calendar")
-                                Text("\(dateFormatter.string(from: startDate)) - \(dateFormatter.string(from: endDate))")
+                                Text(dateRangeText)
                             }
                             .glassMenu()
                         }

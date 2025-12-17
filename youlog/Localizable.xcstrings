@@ -28,16 +28,6 @@
     "# 视图切换" : {
 
     },
-    "%@ - %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ - %2$@"
-          }
-        }
-      }
-    },
     "%lld" : {
 
     },
@@ -340,6 +330,7 @@
       }
     },
     "current_month" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -356,6 +347,7 @@
       }
     },
     "current_quarter" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -372,6 +364,7 @@
       }
     },
     "current_year" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -437,6 +430,7 @@
       }
     },
     "day_before_yesterday" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1277,6 +1271,7 @@
       }
     },
     "today" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1310,6 +1305,7 @@
       }
     },
     "yesterday" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1367,7 +1363,16 @@
     "删除 %lld 个记录" : {
 
     },
+    "删除 %lld 张图片" : {
+
+    },
+    "删除后无法恢复。" : {
+
+    },
     "前两个图标为一组，后两个图标为另一组" : {
+
+    },
+    "加载中..." : {
 
     },
     "压缩" : {
@@ -1452,6 +1457,9 @@
     "屏幕宽度倍数" : {
 
     },
+    "已选择 %lld 张" : {
+
+    },
     "开发功能" : {
 
     },
@@ -1462,6 +1470,9 @@
 
     },
     "开始连续拍照（生成测试图片）" : {
+
+    },
+    "所有图片" : {
 
     },
     "打包照片" : {
@@ -1510,6 +1521,9 @@
         }
       }
     },
+    "查看所有图片预览" : {
+
+    },
     "标签统计" : {
 
     },
@@ -1520,6 +1534,9 @@
 
     },
     "没有可预览的图片" : {
+
+    },
+    "没有图片" : {
 
     },
     "清理模式" : {
@@ -1556,6 +1573,9 @@
 
     },
     "连续拍照测试" : {
+
+    },
+    "选择" : {
 
     },
     "选择主题色" : {
