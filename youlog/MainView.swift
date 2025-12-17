@@ -110,20 +110,8 @@ struct MainView: View {
     @State private var selectedTag: String? = nil
     @State private var showingTagEditor = false
     @AppStorage("isGridView") private var isGridView = true  // 使用 @AppStorage 替代 @State
-    @State private var showingDevMenu = false
-    @State private var isContinuousCapture = false
-    @State private var captureCount = 0
-    @State private var showingDataStats = false
-    @State private var captureTimer: Timer?
-    @State private var showingImageCleaner = false
+    @State private var showingSettings = false
     @State private var showingSystemCamera = false
-    @State private var showingNetworkTransfer = false
-    @State private var localServerURL: String = ""
-    @State private var isServerRunning = false
-    @State private var showingSupportDeveloper = false
-    @State private var showingThemeSettings = false
-    @State private var showingCompressionSettings = false
-    @State private var showingLiquidGlassTest = false
     
     enum TimeRange {
         case day, week, month
@@ -209,8 +197,8 @@ struct MainView: View {
                 HStack(spacing: 0) {
                     if filteredItems.isEmpty {
                         EmptyStateView(
-                            title: NSLocalizedString("no_photos_title", value: "No Photos Found", comment: ""),
-                            description: NSLocalizedString("no_photos_desc", value: "Try changing your filters or adding new photos", comment: "")
+                            title: NSLocalizedString("no_photos_title", value: "无图片", comment: ""),
+                            description: NSLocalizedString("no_photos_desc", value: "尝试更改日期或添加新照片", comment: "")
                         )
                     } else if isGridView {
                         PhotoTimelineView(
@@ -288,76 +276,7 @@ struct MainView: View {
                         }
                         
                         // 3. 设置菜单按钮
-                        Menu {
-                            Button(action: { isGridView.toggle() }) {
-                                Label(isGridView ? "列表视图" : "网格视图", systemImage: isGridView ? "square.fill.text.grid.1x2" : "square.grid.2x2")
-                            }
-                            
-                            Divider()
-                            
-                            Button(action: { showingCompressionSettings = true }) {
-                                Label("压缩设置", systemImage: "slider.horizontal.3")
-                            }
-                            
-                            Button(action: { showingThemeSettings = true }) {
-                                Label("主题", systemImage: "paintbrush")
-                            }
-                            
-                            Divider()
-                            
-                            Button(action: { showingDataStats = true }) {
-                                Label("数据统计", systemImage: "chart.bar")
-                            }
-                            
-                            Button(action: { showingImageCleaner = true }) {
-                                Label("图片清理", systemImage: "trash")
-                            }
-                            
-                            Button(action: { showingNetworkTransfer = true }) {
-                                Label("照片打包", systemImage: "externaldrive")
-                            }
-                            
-                            if filteredItems.count > 1 {
-                                Button(action: {
-                                    currentPlaybackIndex = 0
-                                    showingPlayback = true
-                                }) {
-                                    Label(NSLocalizedString("playback_mode", comment: ""), systemImage: "play.circle")
-                                }
-                            }
-                            
-                            Divider()
-                            
-                            // 仅在测试包名时显示开发菜单项
-                            if Bundle.main.bundleIdentifier == "test.org.cornradio.youlog" {
-                                Button(action: {
-                                    isContinuousCapture.toggle()
-                                    if isContinuousCapture {
-                                        startContinuousCapture()
-                                    } else {
-                                        stopContinuousCapture()
-                                    }
-                                }) {
-                                    Label(isContinuousCapture ? "停止连续拍照" : "连续拍照测试", systemImage: "camera.badge.clock")
-                                }
-                                
-                                Button(action: {
-                                    showingLiquidGlassTest = true
-                                }) {
-                                    Label("Liquid Glass 测试", systemImage: "sparkles")
-                                }
-                                
-                                Divider()
-                            }
-                            
-                            Button(action: { showingSupportDeveloper = true }) {
-                                Label("支持", systemImage: "cup.and.saucer")
-                            }
-                            
-                            Button(action: { showingHelp = true }) {
-                                Label(NSLocalizedString("help", comment: ""), systemImage: "questionmark.circle")
-                            }
-                        } label: {
+                        Button(action: { showingSettings = true }) {
                             VStack(spacing: 4) {
                                 Image(systemName: "gear")
                                     .font(.title2)
@@ -412,9 +331,20 @@ struct MainView: View {
                 CameraView(selectedTag: $selectedTag)
             }
             .sheet(isPresented: $showingImagePicker) {
-                ImagePickerView { imageData in
-                    if let imageData = imageData {
+                ImagePickerView { selectedImages in
+                    // Batch processed images
+                    var assetIdsToDelete: [String] = []
+                    
+                    for (imageData, assetId) in selectedImages {
                         addItem(imageData: imageData)
+                        if let assetId = assetId {
+                            assetIdsToDelete.append(assetId)
+                        }
+                    }
+                    
+                    // Batch delete
+                    if !assetIdsToDelete.isEmpty {
+                        deletePhotosFromLibrary(assetIds: assetIdsToDelete)
                     }
                 }
             }
@@ -438,26 +368,8 @@ struct MainView: View {
             .sheet(isPresented: $showingTagEditor) {
                 TagEditorView(selectedTag: $selectedTag)
             }
-            .confirmationDialog("开发功能", isPresented: $showingDevMenu) {
-                Button(isContinuousCapture ? "停止连续拍照" : "开始连续拍照（生成测试图片）") {
-                    isContinuousCapture.toggle()
-                    if isContinuousCapture {
-                        startContinuousCapture()
-                    } else {
-                        stopContinuousCapture()
-                    }
-                }
-                
-                Button("取消", role: .cancel) { }
-            }
-            .sheet(isPresented: $showingDataStats) {
-                DataStatsView(items: items)
-            }
-            .sheet(isPresented: $showingImageCleaner) {
-                ImageCleanerView(items: items)
-            }
-            .sheet(isPresented: $showingNetworkTransfer) {
-                NetworkTransferView(items: items)
+            .sheet(isPresented: $showingSettings) {
+                SettingsView(isGridView: $isGridView, items: items, filteredItems: filteredItems)
             }
             .fullScreenCover(isPresented: $showingSystemCamera) {
                 SystemCameraView { imageData in
@@ -466,18 +378,6 @@ struct MainView: View {
                     }
                 }
                 .background(.black)
-            }
-            .sheet(isPresented: $showingSupportDeveloper) {
-                SupportDeveloperView()
-            }
-            .sheet(isPresented: $showingThemeSettings) {
-                ThemeSettingsView()
-            }
-            .sheet(isPresented: $showingCompressionSettings) {
-                CompressionSettingsView()
-            }
-            .sheet(isPresented: $showingLiquidGlassTest) {
-                LiquidGlassTestView()
             }
         }
     }
@@ -497,108 +397,28 @@ struct MainView: View {
         }
     }
     
+    private func deletePhotosFromLibrary(assetIds: [String]) {
+        let assets = PHAsset.fetchAssets(withLocalIdentifiers: assetIds, options: nil)
+        guard assets.count > 0 else { return }
+        
+        PHPhotoLibrary.shared().performChanges({
+            PHAssetChangeRequest.deleteAssets(assets)
+        }) { success, error in
+            if success {
+                print("Successfully deleted original photos")
+            } else if let error = error {
+                print("Error deleting original photos: \(error.localizedDescription)")
+            }
+        }
+    }
+    
     private func scrollToItem(_ item: Item) {
         withAnimation {
             scrollProxy?.scrollTo(item.id, anchor: .center)
         }
     }
-    
-    private func startContinuousCapture() {
-        captureCount = 0
-        captureTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
-            let newItem = Item(timestamp: Date(), 
-                             imageData: generateTestImage(),
-                             tag: selectedTag)
-            modelContext.insert(newItem)
-            captureCount += 1
-        }
-    }
-    
-    private func stopContinuousCapture() {
-        captureTimer?.invalidate()
-        captureTimer = nil
-    }
-    
-    
-    private func generateTestImage() -> Data? {
-        // 使用与iPhone相机相同的尺寸比例 (4:3)
-        let screenSize = UIScreen.main.bounds.size
-        let imageWidth = screenSize.width * 3 // 3倍屏幕宽度以获得高分辨率
-        let imageHeight = imageWidth * 4 / 3 // 4:3比例
-        let size = CGSize(width: imageWidth, height: imageHeight)
-        
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let image = renderer.image { context in
-            // 根据captureCount选择不同的颜色
-            let colors: [UIColor] = [
-                .systemBlue,      // 蓝色
-                .systemPurple,    // 紫色
-                .systemYellow,    // 黄色
-                .systemGreen,     // 绿色
-                .systemOrange,    // 橙色
-                .systemRed,       // 红色
-                .systemPink,      // 粉色
-                .systemIndigo,    // 靛蓝色
-                .systemTeal,      // 青色
-                .systemMint       // 薄荷色
-            ]
-            
-            let colorIndex = captureCount % colors.count
-            let backgroundColor = colors[colorIndex]
-            
-            // 填充背景色
-            backgroundColor.setFill()
-            context.fill(CGRect(origin: .zero, size: size))
-            
-            // 添加渐变效果
-            let gradientLayer = CAGradientLayer()
-            gradientLayer.frame = CGRect(origin: .zero, size: size)
-            gradientLayer.colors = [
-                backgroundColor.cgColor,
-                backgroundColor.withAlphaComponent(0.7).cgColor,
-                backgroundColor.withAlphaComponent(0.9).cgColor
-            ]
-            gradientLayer.startPoint = CGPoint(x: 0, y: 0)
-            gradientLayer.endPoint = CGPoint(x: 1, y: 1)
-            
-            // 绘制渐变
-            if let gradientImage = gradientLayer.renderImage() {
-                gradientImage.draw(in: CGRect(origin: .zero, size: size))
-            }
-            
-            // 添加文字
-            let text = "Test Image \(captureCount + 1)"
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.boldSystemFont(ofSize: size.width * 0.05), // 响应式字体大小
-                .foregroundColor: UIColor.white,
-                .strokeColor: UIColor.black,
-                .strokeWidth: -2.0
-            ]
-            let textSize = text.size(withAttributes: attributes)
-            let textRect = CGRect(x: (size.width - textSize.width) / 2,
-                                y: (size.height - textSize.height) / 2,
-                                width: textSize.width,
-                                height: textSize.height)
-            text.draw(in: textRect, withAttributes: attributes)
-            
-            // 添加时间戳
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "HH:mm:ss"
-            let timeText = dateFormatter.string(from: Date())
-            let timeAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: size.width * 0.03),
-                .foregroundColor: UIColor.white.withAlphaComponent(0.8)
-            ]
-            let timeSize = timeText.size(withAttributes: timeAttributes)
-            let timeRect = CGRect(x: 20,
-                                y: size.height - timeSize.height - 20,
-                                width: timeSize.width,
-                                height: timeSize.height)
-            timeText.draw(in: timeRect, withAttributes: timeAttributes)
-        }
-        return image.jpegData(compressionQuality: 0.9)
-    }
 }
+
 
 extension Calendar {
     func startOfDay(for date: Date) -> Date {

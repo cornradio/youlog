@@ -17,43 +17,64 @@ import SwiftUI
 
 struct ImagePickerView: UIViewControllerRepresentable {
     @Environment(\.presentationMode) private var presentationMode
-    let onImageDataSelected: (Data?) -> Void
+    let onImagesSelected: ([(Data, String?)]) -> Void
     
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var config = PHPickerConfiguration(photoLibrary: .shared())
+        config.filter = .images
+        config.selectionLimit = 0 // 0 means no limit (multi-selection)
+        config.selection = .ordered
+        
+        let picker = PHPickerViewController(configuration: config)
         picker.delegate = context.coordinator
-        picker.sourceType = .photoLibrary
         return picker
     }
     
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
     
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    class Coordinator: NSObject, PHPickerViewControllerDelegate {
         let parent: ImagePickerView
         
         init(_ parent: ImagePickerView) {
             self.parent = parent
         }
         
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                if let imageData = image.jpegData(compressionQuality: 0.8) {
-                    parent.onImageDataSelected(imageData)
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            // Dismiss picker immediately
+            parent.presentationMode.wrappedValue.dismiss()
+            
+            guard !results.isEmpty else { return }
+            
+            var processedImages: [(Data, String?)] = []
+            let group = DispatchGroup()
+            
+            for result in results {
+                group.enter()
+                
+                let assetId = result.assetIdentifier
+                
+                if result.itemProvider.canLoadObject(ofClass: UIImage.self) {
+                    result.itemProvider.loadObject(ofClass: UIImage.self) { image, error in
+                        if let image = image as? UIImage,
+                           let data = image.jpegData(compressionQuality: 0.8) {
+                            DispatchQueue.main.async {
+                                processedImages.append((data, assetId))
+                            }
+                        }
+                        group.leave()
+                    }
                 } else {
-                    parent.onImageDataSelected(nil)
+                    group.leave()
                 }
-            } else {
-                parent.onImageDataSelected(nil)
             }
-            parent.presentationMode.wrappedValue.dismiss()
-        }
-        
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.presentationMode.wrappedValue.dismiss()
+            
+            group.notify(queue: .main) {
+                self.parent.onImagesSelected(processedImages)
+            }
         }
     }
 }

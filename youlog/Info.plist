@@ -23,5 +23,10 @@
 			</array>
 		</dict>
 	</array>
+
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>我们需要访问您的相册以导入照片并提供清理功能。</string>
+	<key>NSCameraUsageDescription</key>
+	<string>我们需要访问您的相机以拍摄照片。</string>
 </dict>
 </plist>
