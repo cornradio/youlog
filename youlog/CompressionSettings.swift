@@ -31,6 +31,13 @@ class CompressionSettings: ObservableObject {
         }
     }
     
+    // 是否启用从相册导入后自动压缩
+    @Published var autoCompressAlbumImport: Bool {
+        didSet {
+            UserDefaults.standard.set(autoCompressAlbumImport, forKey: "autoCompressAlbumImport")
+        }
+    }
+    
     // 单例实例
     static let shared = CompressionSettings()
     
@@ -40,6 +47,7 @@ class CompressionSettings: ObservableObject {
         self.compressionQuality = UserDefaults.standard.object(forKey: "compressionQuality") as? Double ?? 0.8
         self.autoCompressSystemCamera = UserDefaults.standard.bool(forKey: "autoCompressSystemCamera")
         self.defaultUseSystemCamera = UserDefaults.standard.bool(forKey: "defaultUseSystemCamera")
+        self.autoCompressAlbumImport = UserDefaults.standard.bool(forKey: "autoCompressAlbumImport")
     }
     
     // 获取目标宽度（基于屏幕宽度和倍数）
@@ -54,5 +62,6 @@ class CompressionSettings: ObservableObject {
         compressionQuality = 0.8
         autoCompressSystemCamera = false
         defaultUseSystemCamera = false
+        autoCompressAlbumImport = false
     }
 }

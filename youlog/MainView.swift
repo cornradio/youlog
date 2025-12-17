@@ -334,9 +334,10 @@ struct MainView: View {
                 ImagePickerView { selectedImages in
                     // Batch processed images
                     var assetIdsToDelete: [String] = []
+                    let shouldCompress = CompressionSettings.shared.autoCompressAlbumImport
                     
                     for (imageData, assetId) in selectedImages {
-                        addItem(imageData: imageData)
+                        addItem(imageData: imageData, shouldCompress: shouldCompress)
                         if let assetId = assetId {
                             assetIdsToDelete.append(assetId)
                         }
@@ -374,7 +375,8 @@ struct MainView: View {
             .fullScreenCover(isPresented: $showingSystemCamera) {
                 SystemCameraView { imageData in
                     if let imageData = imageData {
-                        addItem(imageData: imageData)
+                        let shouldCompress = CompressionSettings.shared.autoCompressSystemCamera
+                        addItem(imageData: imageData, shouldCompress: shouldCompress)
                     }
                 }
                 .background(.black)
@@ -382,10 +384,42 @@ struct MainView: View {
         }
     }
     
-    private func addItem(imageData: Data? = nil) {
+    private func addItem(imageData: Data? = nil, shouldCompress: Bool = false) {
+        var finalData = imageData
+        
+        if shouldCompress, let data = finalData {
+            finalData = compressImageData(data)
+        }
+        
         withAnimation {
-            let newItem = Item(timestamp: Date(), imageData: imageData, tag: selectedTag)
+            let newItem = Item(timestamp: Date(), imageData: finalData, tag: selectedTag)
             modelContext.insert(newItem)
+        }
+    }
+    
+    // Helper to compress data based on settings
+    private func compressImageData(_ data: Data) -> Data? {
+        guard let image = UIImage(data: data) else { return data }
+        let compSettings = CompressionSettings.shared
+        
+        let targetWidth = compSettings.targetWidth
+        let quality = compSettings.compressionQuality
+        
+        let originalSize = image.size
+        let shortSide = min(originalSize.width, originalSize.height)
+        
+        // Only resize if larger than target
+        if shortSide > targetWidth {
+            let scale = targetWidth / shortSide
+            let newSize = CGSize(width: originalSize.width * scale, height: originalSize.height * scale)
+            let renderer = UIGraphicsImageRenderer(size: newSize)
+            let resizedImage = renderer.image { _ in
+                image.draw(in: CGRect(origin: .zero, size: newSize))
+            }
+            return resizedImage.jpegData(compressionQuality: quality)
+        } else {
+            // Just compress quality if size is OK
+            return image.jpegData(compressionQuality: quality)
         }
     }
     

@@ -74,6 +74,14 @@ struct CompressionSettingsView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
+                    
+                    Toggle("从相册导入后自动压缩", isOn: $settings.autoCompressAlbumImport)
+                    
+                    if settings.autoCompressAlbumImport {
+                        Text("从相册选择的照片将自动按照上述设置进行压缩")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
 
                 

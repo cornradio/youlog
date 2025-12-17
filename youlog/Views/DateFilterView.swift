@@ -44,6 +44,10 @@ struct DateFilterView: View {
                     NavigationLink(destination: AllImagesView(items: items)) {
                         Label("查看所有图片预览", systemImage: "photo.stack")
                     }
+                    
+                    NavigationLink(destination: NoteListView(items: items)) {
+                        Label("查看所有笔记", systemImage: "note.text")
+                    }
                 }
                 
                 Section(header: Text(NSLocalizedString("quick_select", comment: ""))) {

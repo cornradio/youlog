@@ -43,14 +43,26 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
-                    Button(action: { isGridView.toggle() }) {
+                    Button(action: { isGridView = true }) {
                         HStack {
-                            Label(isGridView ? "列表视图" : "网格视图", systemImage: isGridView ? "square.fill.text.grid.1x2" : "square.grid.2x2")
+                            Label("网格视图", systemImage: "square.grid.2x2")
                                 .foregroundStyle(.primary)
                             Spacer()
                             if isGridView {
                                 Image(systemName: "checkmark")
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(themeManager.currentTheme.color)
+                            }
+                        }
+                    }
+                    
+                    Button(action: { isGridView = false }) {
+                        HStack {
+                            Label("列表视图", systemImage: "square.fill.text.grid.1x2")
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            if !isGridView {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(themeManager.currentTheme.color)
                             }
                         }
                     }

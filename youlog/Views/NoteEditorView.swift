@@ -21,49 +21,61 @@ struct NoteEditorView: View {
                         .scrollContentBackground(.hidden)
                 }
                 .background(.ultraThinMaterial) // 毛玻璃背景
-                
-                // 右下角的圆形对勾按钮
-                VStack {
-                    Spacer()
+            }
+            .navigationTitle(NSLocalizedString("edit_note", comment: ""))
+            .navigationBarTitleDisplayMode(.inline)
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: 0) {
+                    Divider()
                     HStack {
-                        Spacer()
+                        // Clear Button
+                        Button(action: {
+                            tempNote = ""
+                        }) {
+                            VStack(spacing: 4) {
+                                Image(systemName: "trash")
+                                    .font(.title2)
+                                Text(NSLocalizedString("clear", comment: ""))
+                                    .font(.caption)
+                            }
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity)
+                            .contentShape(Rectangle())
+                        }
+                        
+                        // Cancel Button
+                        Button(action: {
+                            dismiss()
+                        }) {
+                            VStack(spacing: 4) {
+                                Image(systemName: "xmark")
+                                    .font(.title2)
+                                Text(NSLocalizedString("cancel", comment: ""))
+                                    .font(.caption)
+                            }
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .contentShape(Rectangle())
+                        }
+                        
+                        // Done Button
                         Button(action: {
                             note = tempNote
                             dismiss()
                         }) {
-                            Image(systemName: "checkmark")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .frame(width: 56, height: 56)
-                                .background(AppConstants.themeManager.currentTheme.color)
-                                .clipShape(Circle())
-                                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                            VStack(spacing: 4) {
+                                Image(systemName: "checkmark")
+                                    .font(.title2)
+                                Text(NSLocalizedString("done", comment: ""))
+                                    .font(.caption)
+                            }
+                            .foregroundColor(AppConstants.themeManager.currentTheme.color)
+                            .frame(maxWidth: .infinity)
+                            .contentShape(Rectangle())
                         }
-                        .padding(.trailing, 20)
-                        .padding(.bottom, 20)
                     }
-                }
-            }
-            .navigationTitle(NSLocalizedString("edit_note", comment: ""))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(NSLocalizedString("cancel", comment: "")) {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button(NSLocalizedString("clear", comment: "")) {
-                        tempNote = ""
-                    }.foregroundColor(.red)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(NSLocalizedString("done", comment: "")) {
-                        note = tempNote
-                        dismiss()
-                    }
-                    .foregroundColor(AppConstants.themeManager.currentTheme.color)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial)
                 }
             }
         }

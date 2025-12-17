@@ -54,7 +54,7 @@ struct NetworkTransferView: View {
                     Text("📦 打包说明")
                         .font(.headline)
                     
-                    Text("• 将照片保存到文件夹（文件App-我的iPhone-youlog）")
+                    Text("将照片保存到文件App，我的iPhone，youlog文件夹中")
                 }
                 .padding()
                 .background(AppConstants.themeManager.currentTheme.color.opacity(0.1))
