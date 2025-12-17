@@ -88,6 +88,44 @@ struct PhotoTimelineView2: View {
     }
 }
 
+struct PhotoTimelineView3: View {
+    let items: [Item]
+    @Binding var selectedDate: Date
+    let scrollToItem: (Item) -> Void
+    @State private var isFirstAppear = true
+    
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 0) { // 列表风格通常不需要大的间距，或者由 Divider 分隔
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                        PhotoCard3(item: item, allItems: items)
+                            .id(item.id)
+                            .onTapGesture { // 虽然 PhotoCard3 内部有点击逻辑，这里可以额外处理滚动定位
+                                withAnimation {
+                                    selectedDate = item.timestamp
+                                    scrollToItem(item)
+                                }
+                            }
+                        
+                        // 添加分割线，除了最后一个元素
+                        if index < items.count - 1 {
+                            Divider()
+                                .padding(.leading, 80) // 缩进风格
+                        }
+                    }
+                }
+            }
+            .onAppear {
+                if isFirstAppear {
+                    proxy.scrollTo(items.first?.id, anchor: .top)
+                    isFirstAppear = false
+                }
+            }
+        }
+    }
+}
+
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
@@ -109,7 +147,7 @@ struct MainView: View {
     @State private var showingHelp = false
     @State private var selectedTag: String? = nil
     @State private var showingTagEditor = false
-    @AppStorage("isGridView") private var isGridView = true  // 使用 @AppStorage 替代 @State
+    @AppStorage("viewMode") private var viewMode: Int = 0  // 0: Grid, 1: Card, 2: List
     @State private var showingSettings = false
     @State private var showingSystemCamera = false
     
@@ -200,14 +238,20 @@ struct MainView: View {
                             title: NSLocalizedString("no_photos_title", value: "无图片", comment: ""),
                             description: NSLocalizedString("no_photos_desc", value: "尝试更改日期或添加新照片", comment: "")
                         )
-                    } else if isGridView {
+                    } else if viewMode == 0 {
                         PhotoTimelineView(
                             items: filteredItems,
                             selectedDate: $selectedDate,
                             scrollToItem: scrollToItem
                         )
-                    } else {
+                    } else if viewMode == 1 {
                         PhotoTimelineView2(
+                            items: filteredItems,
+                            selectedDate: $selectedDate,
+                            scrollToItem: scrollToItem
+                        )
+                    } else {
+                        PhotoTimelineView3(
                             items: filteredItems,
                             selectedDate: $selectedDate,
                             scrollToItem: scrollToItem
@@ -370,7 +414,7 @@ struct MainView: View {
                 TagEditorView(selectedTag: $selectedTag)
             }
             .sheet(isPresented: $showingSettings) {
-                SettingsView(isGridView: $isGridView, items: items, filteredItems: filteredItems)
+                SettingsView(viewMode: $viewMode, items: items, filteredItems: filteredItems)
             }
             .fullScreenCover(isPresented: $showingSystemCamera) {
                 SystemCameraView { imageData in

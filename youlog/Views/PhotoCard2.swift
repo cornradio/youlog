@@ -58,15 +58,10 @@ struct PhotoCard2: View {
                             LongPressGesture(minimumDuration: 0.5)
                                 .onEnded { _ in
                                     DispatchQueue.main.async {
-                                        showingQuickActions = true
+                                        showingNoteEditor = true
                                     }
                                 }
                         )
-                        .contextMenu {
-                            MenuContent(uiImage: uiImage, item: item, selectedTag: $selectedTag, editedNote: $editedNote, showingDeleteAlert: $showingDeleteAlert, showingSaveSuccess: $showingSaveSuccess, showingTagEditor: $showingTagEditor, showingNoteEditor: $showingNoteEditor, onEditTime: {
-                                showingDatePicker = true
-                            })
-                        }
                 } else {
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))

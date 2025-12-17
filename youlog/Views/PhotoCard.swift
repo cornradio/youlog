@@ -7,6 +7,7 @@ struct PhotoImageView: View {
     let imageData: Data?           // 图片数据
     let note: String?              // 备注内容
     let onTap: () -> Void         // 点击图片的回调
+    let onDoubleTap: () -> Void   // 双击图片的回调
     let onLongPress: () -> Void   // 长按图片的回调
     let onNoteTap: () -> Void     // 点击备注的回调
     
@@ -198,34 +199,16 @@ struct PhotoCard: View {
                     currentImageIndex = currentItemIndex
                     showingFullScreen = true
                 },
+                    onDoubleTap: { }, // 已弃用双击
                     onLongPress: { 
-                        // 长按图片：显示快速操作菜单
-                        showingQuickActions = true 
+                        // 长按图片：直接进入笔记编辑
+                        showingNoteEditor = true 
                     },
                     onNoteTap: { 
                         // 点击备注：显示备注编辑器
                         showingNoteEditor = true 
                     }
                 )
-                .contextMenu {
-                    // 右键菜单（长按菜单）
-                    if let imageData = item.imageData,
-                       let uiImage = UIImage(data: imageData) {
-                        MenuContent(
-                            uiImage: uiImage,
-                            item: item,
-                            selectedTag: $selectedTag,  // 传递选中的标签
-                            editedNote: $editedNote,
-                            showingDeleteAlert: $showingDeleteAlert,
-                            showingSaveSuccess: $showingSaveSuccess,
-                            showingTagEditor: $showingTagEditor,
-                            showingNoteEditor: $showingNoteEditor,
-                            onEditTime: {
-                                showingDatePicker = true
-                            }
-                        )
-                    }
-                }
                 
                 // 底部信息栏：时间、标签、操作按钮
                 HStack {

@@ -686,9 +686,6 @@
         }
       }
     },
-    "General" : {
-
-    },
     "Glass Union 效果" : {
 
     },
@@ -1333,6 +1330,9 @@
     "Tools" : {
 
     },
+    "View Mode" : {
+
+    },
     "view_fullsize" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1482,6 +1482,9 @@
 
     },
     "外观设置" : {
+
+    },
+    "大图视图" : {
 
     },
     "大小阈值" : {

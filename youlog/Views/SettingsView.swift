@@ -15,7 +15,7 @@ struct SettingsView: View {
     @ObservedObject var themeManager = AppConstants.themeManager
     
     // Bindings from MainView
-    @Binding var isGridView: Bool
+    @Binding var viewMode: Int
     
     // Data
     var items: [Item]
@@ -43,31 +43,43 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
-                    Button(action: { isGridView = true }) {
+                    Button(action: { viewMode = 0 }) {
                         HStack {
                             Label("网格视图", systemImage: "square.grid.2x2")
                                 .foregroundStyle(.primary)
                             Spacer()
-                            if isGridView {
+                            if viewMode == 0 {
                                 Image(systemName: "checkmark")
                                     .foregroundStyle(themeManager.currentTheme.color)
                             }
                         }
                     }
                     
-                    Button(action: { isGridView = false }) {
+                    Button(action: { viewMode = 1 }) {
                         HStack {
-                            Label("列表视图", systemImage: "square.fill.text.grid.1x2")
+                            Label("大图视图", systemImage: "rectangle.portrait")
                                 .foregroundStyle(.primary)
                             Spacer()
-                            if !isGridView {
+                            if viewMode == 1 {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(themeManager.currentTheme.color)
+                            }
+                        }
+                    }
+
+                    Button(action: { viewMode = 2 }) {
+                        HStack {
+                            Label("列表视图", systemImage: "list.bullet")
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            if viewMode == 2 {
                                 Image(systemName: "checkmark")
                                     .foregroundStyle(themeManager.currentTheme.color)
                             }
                         }
                     }
                 } header: {
-                    Text("General")
+                    Text("View Mode")
                 }
                 
                 Section {
@@ -248,5 +260,5 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView(isGridView: .constant(true), items: [], filteredItems: [])
+    SettingsView(viewMode: .constant(0), items: [], filteredItems: [])
 }
