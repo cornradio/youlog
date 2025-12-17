@@ -207,7 +207,12 @@ struct MainView: View {
                 
                 //photocard place
                 HStack(spacing: 0) {
-                    if isGridView {
+                    if filteredItems.isEmpty {
+                        EmptyStateView(
+                            title: NSLocalizedString("no_photos_title", value: "No Photos Found", comment: ""),
+                            description: NSLocalizedString("no_photos_desc", value: "Try changing your filters or adding new photos", comment: "")
+                        )
+                    } else if isGridView {
                         PhotoTimelineView(
                             items: filteredItems,
                             selectedDate: $selectedDate,

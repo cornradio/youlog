@@ -760,6 +760,28 @@
         }
       }
     },
+    "no_photos_desc" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Try changing your filters or adding new photos"
+          }
+        }
+      }
+    },
+    "no_photos_title" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "No Photos Found"
+          }
+        }
+      }
+    },
     "notes" : {
       "extractionState" : "stale",
       "localizations" : {
