@@ -222,21 +222,67 @@ struct MainView: View {
                     }
                 }
             }
-            // 顶部空间
-            .safeAreaInset(edge: .top) {
-                GlassEffectContainer() {
-                HStack {
-                        // 日期筛选栏和
+
+            //底部空间
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: 0) {
+                    Divider() // 顶部分割线
+                    
+                    HStack(spacing: 0) {
+                        // 1. 日期筛选栏
                         Button(action: { showingDateFilter = true }) {
-                            HStack {
+                            VStack(spacing: 4) {
                                 Image(systemName: "calendar")
+                                    .font(.title2)
                                 Text(dateRangeText)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
                             }
-                            .glassMenu()
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .contentShape(Rectangle())
                         }
                         
-                        Spacer()
-                                                // 设置菜单按钮
+                        // 2. tag 选择器
+                        Menu {
+                            ForEach(tagManager.availableTags, id: \.self) { tag in
+                                Button(action: {
+                                    if tagManager.isAllTag(tag) {
+                                        selectedTag = nil
+                                    } else {
+                                        selectedTag = tag
+                                    }
+                                }) {
+                                    HStack {
+                                        Text(tag)
+                                        if (selectedTag == nil && tagManager.isAllTag(tag)) || selectedTag == tag {
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            Divider()
+                            
+                            Button(action: {
+                                showingTagEditor = true
+                            }) {
+                                Label(NSLocalizedString("edit_tags", comment: ""), systemImage: "pencil")
+                            }
+                        } label: {
+                            VStack(spacing: 4) {
+                                Image(systemName: "tag")
+                                    .font(.title2)
+                                Text(selectedTag ?? tagManager.allTag)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .contentShape(Rectangle())
+                        }
+                        
+                        // 3. 设置菜单按钮
                         Menu {
                             Button(action: { isGridView.toggle() }) {
                                 Label(isGridView ? "列表视图" : "网格视图", systemImage: isGridView ? "square.fill.text.grid.1x2" : "square.grid.2x2")
@@ -307,62 +353,19 @@ struct MainView: View {
                                 Label(NSLocalizedString("help", comment: ""), systemImage: "questionmark.circle")
                             }
                         } label: {
-                            Image(systemName: "gear")
-//                                .font(.system(size: 20, weight: .medium))
-//                                .foregroundColor(AppConstants.themeManager.currentTheme.color)
-                                .glassMenu()
+                            VStack(spacing: 4) {
+                                Image(systemName: "gear")
+                                    .font(.title2)
+                                Text("设置")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .contentShape(Rectangle())
                         }
-                        // 设置菜单按钮 over
-
-                        // tag 选择器
-                        Menu {
-                            ForEach(tagManager.availableTags, id: \.self) { tag in
-                                Button(action: {
-                                    if tagManager.isAllTag(tag) {
-                                        selectedTag = nil
-                                    } else {
-                                        selectedTag = tag
-                                    }
-                                }) {
-                                    HStack {
-                                        Text(tag)
-                                        if (selectedTag == nil && tagManager.isAllTag(tag)) || selectedTag == tag {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            Divider()
-                            
-                            Button(action: {
-                                showingTagEditor = true
-                            }) {
-                                Label(NSLocalizedString("edit_tags", comment: ""), systemImage: "pencil")
-                            }
-                        } label: {
-                            HStack {
-                                Image(systemName: "tag")
-                                Text(selectedTag ?? tagManager.allTag)
-                            }
-                            .glassMenu()
-
-                        }
-
-                       
                         
-                    }
-                    .padding()
-                }
-                
-            }
-            //底部空间
-            .safeAreaInset(edge: .bottom) {
-                GlassEffectContainer(spacing: 60.0) {
-                    HStack() {
-
-                        // Spacer()
-                        // 添加菜单按钮
+                        // 4. 加号按钮 (放在最右侧)
                         Menu {
                             Button(action: { showingCamera = true }) {
                                 Label(NSLocalizedString("take_photo", comment: ""), systemImage: "camera")
@@ -384,20 +387,21 @@ struct MainView: View {
                                 }
                             }
                         } label: {
-                            Image(systemName: "plus")
-                                  .glassCircleButton(tint: AppConstants.themeManager.currentTheme.color)
-//                                .font(.system(size: 20, weight: .medium))
-//                                .foregroundColor(AppConstants.themeManager.currentTheme.color)
-//                                .frame(width: 56, height: 56)
-//                                .clipShape(Circle())
-//                                .glassEffect()
+                            VStack(spacing: 4) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title2)
+                                Text("添加")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .contentShape(Rectangle())
                         }
-                        // + btn over
-                        
-
-                        
                     }
                 }
+                .background(.ultraThinMaterial) // 整个底部栏使用毛玻璃背景
+                .foregroundColor(AppConstants.themeManager.currentTheme.color)
             }
             .fullScreenCover(isPresented: $showingCamera) {
                 CameraView(selectedTag: $selectedTag)
@@ -450,7 +454,7 @@ struct MainView: View {
             .sheet(isPresented: $showingNetworkTransfer) {
                 NetworkTransferView(items: items)
             }
-            .sheet(isPresented: $showingSystemCamera) {
+            .fullScreenCover(isPresented: $showingSystemCamera) {
                 SystemCameraView { imageData in
                     if let imageData = imageData {
                         addItem(imageData: imageData)

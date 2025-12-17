@@ -37,20 +37,45 @@ struct youlogApp: App {
     }
     
     private func handleIncomingURL(_ url: URL) {
-        // 对于 “Open In” 方式，系统已经把文件放到 App 的 Inbox，直接读取即可
-        do {
-            let data = try Data(contentsOf: url)          // 读取图片二进制
-            let newItem = Item(timestamp: Date(),
-                               imageData: data,
-                               note: "Imported from Share")
-            // 使用主模型容器的 context 保存
-            let context = sharedModelContainer.mainContext
-            context.insert(newItem)
-            // SwiftData 默认自动保存，若想手动确认可取消注释下面一行
-            // try context.save()
-            print("Successfully imported image from: \(url)")
-        } catch {
-            print("Error importing image: \(error)")
+        // 启动安全访问（针对某些系统文件或截图）
+        let isSecurityScoped = url.startAccessingSecurityScopedResource()
+        defer {
+            if isSecurityScoped {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        
+        // 使用 NSFileCoordinator 读取文件，确保文件访问安全
+        let coordinator = NSFileCoordinator()
+        var error: NSError?
+        
+        coordinator.coordinate(readingItemAt: url, options: .withoutChanges, error: &error) { readUrl in
+            do {
+                let data = try Data(contentsOf: readUrl)
+                
+                // 尝试创建图片以验证数据有效性
+                if let _ = UIImage(data: data) {
+                    // 必须在主线程执行 UI/Data 操作
+                    DispatchQueue.main.async {
+                        // 获取文件名作为备注
+                        let filename = url.lastPathComponent
+                        let newItem = Item(timestamp: Date(),
+                                           imageData: data,
+                                           note: "导入: \(filename)")
+                        let context = sharedModelContainer.mainContext
+                        context.insert(newItem)
+                        print("Successfully imported image: \(filename)")
+                    }
+                } else {
+                    print("Imported file is not a valid image: \(readUrl)")
+                }
+            } catch {
+                print("Error reading data: \(error)")
+            }
+        }
+        
+        if let error = error {
+            print("File coordinator error: \(error)")
         }
     }
 }

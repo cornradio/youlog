@@ -154,87 +154,108 @@ struct ImageDetailView: View {
                 image: image,
                 isFlipped: isFlipped,
                 currentIndex: currentIndex
-            ) 
-//            .ignoresSafeArea()
-            .overlay(bottomMenu(), alignment: .bottom) // 菜单覆盖在底部
+            )
+        }
+        .safeAreaInset(edge: .bottom) {
+            bottomMenu()
         }
         .navigationBarBackButtonHidden(true)
     }
 
     private func bottomMenu() -> some View {
-        HStack(spacing: 18) {
-            // Close Button
-            Button(action: {
-                dismiss()
-            }) {
-                Image(systemName: "xmark.circle")
-                    .font(.title2)
-                    .foregroundColor(.red)
-            }
+        VStack(spacing: 0) {
+            Divider()
+                .background(Color.white.opacity(0.1))
             
-            Divider()
-                .frame(height: 20)
-                .background(Color.white.opacity(0.3))
-                
-            Button(action: navigateToPrevious) {
-                Image(systemName: "chevron.left.circle")
-                    .font(.title2)
-                    .foregroundColor(.white)
-            }
-            Text("\(currentIndex + 1) / \(images.count)")
-                .font(.subheadline)
-                .foregroundColor(.white)
-            Button(action: navigateToNext) {
-                Image(systemName: "chevron.right.circle")
-                    .font(.title2)
-                    .foregroundColor(.white)
-            }
-            Divider()
-                .frame(height: 20)
-                .background(Color.white.opacity(0.3))
-            // Button(action: { //反转 功能失效，备注
-            //     isFlipped.toggle()
-            // }) {
-            //     Image(systemName: "arrow.left.and.right") fill
-            //         .font(.title2)
-            //         .foregroundColor(.white)
-            // }
-            HStack {
-                if isCompressing {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+            HStack(spacing: 0) {
+                // 1. 关闭
+                Button(action: {
+                    dismiss()
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .medium))
+                        Text("关闭")
+                            .font(.caption2)
+                    }
+                    .foregroundColor(.white.opacity(0.9))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .contentShape(Rectangle())
                 }
                 
+                // 2. 上一张
+                Button(action: navigateToPrevious) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundColor(.white.opacity(0.9))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .contentShape(Rectangle())
+                }
+                
+                // 3. 状态信息 (点击可压缩)
                 Button(action: {
                     showCompressionAlert = true
                 }) {
-                    Text(imageSize)
-                        .font(.subheadline)
-                        .foregroundColor(.white)
+                    VStack(spacing: 2) {
+                        Text("\(currentIndex + 1) / \(images.count)")
+                            .font(.system(.caption, design: .monospaced))
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        if isCompressing {
+                            ProgressView()
+                                .scaleEffect(0.5)
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .frame(height: 12)
+                        } else {
+                            Text(imageSize)
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.6))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 4)
+                    .contentShape(Rectangle())
                 }
                 .disabled(isCompressing)
-            }
-            Button(action: {
-                let av = UIActivityViewController(activityItems: [image], applicationActivities: nil)
-                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                   let window = windowScene.windows.first {
-                    av.popoverPresentationController?.sourceView = window
-                    av.popoverPresentationController?.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-                    window.rootViewController?.present(av, animated: true, completion: nil)
+                
+                // 4. 下一张
+                Button(action: navigateToNext) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundColor(.white.opacity(0.9))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .contentShape(Rectangle())
                 }
-            }) {
-                Image(systemName: "square.and.arrow.up.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(.blue)
+                
+                // 5. 分享
+                Button(action: {
+                    let av = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                       let window = windowScene.windows.first {
+                        av.popoverPresentationController?.sourceView = window
+                        av.popoverPresentationController?.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                        window.rootViewController?.present(av, animated: true, completion: nil)
+                    }
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 20, weight: .medium))
+                        Text("分享")
+                            .font(.caption2)
+                    }
+                    .foregroundColor(.white.opacity(0.9))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .contentShape(Rectangle())
+                }
             }
+            .padding(.bottom, 4) // 适配 Home Indicator
         }
-
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-     .clipShape(Capsule())
-        .glassEffect()
-        // .padding(.bottom, 20)
+        .background(.ultraThinMaterial)
         .alert("压缩图片", isPresented: $showCompressionAlert) {
             Button("取消", role: .cancel) { }
             Button("压缩") {

@@ -20,6 +20,7 @@ struct NoteEditorView: View {
                         .background(Color.clear)
                         .scrollContentBackground(.hidden)
                 }
+                .background(.ultraThinMaterial) // 毛玻璃背景
                 
                 // 右下角的圆形对勾按钮
                 VStack {

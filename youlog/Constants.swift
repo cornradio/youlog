@@ -11,6 +11,7 @@ enum AppTheme: String, CaseIterable {
     case pink = "粉色"
     case indigo = "靛蓝"
     case teal = "青色"
+    case standard = "默认"
     
     var color: Color {
         switch self {
@@ -30,6 +31,8 @@ enum AppTheme: String, CaseIterable {
             return .indigo
         case .teal:
             return .teal
+        case .standard:
+            return .primary
         }
     }
     
@@ -51,6 +54,8 @@ enum AppTheme: String, CaseIterable {
             return "circle.fill"
         case .teal:
             return "circle.fill"
+        case .standard:
+            return "circle.righthalf.filled" // 使用半圆图标表示自适应/默认
         }
     }
 }
