@@ -121,42 +121,17 @@ struct ImageDetailWrapper: View {
     let items: [Item]
     let initialItem: Item
     @State private var currentIndex: Int = 0
-    @State private var images: [UIImage] = []
     
     init(items: [Item], initialItem: Item) {
         self.items = items
         self.initialItem = initialItem
+        // Calculate initial index
+        if let index = items.firstIndex(where: { $0.id == initialItem.id }) {
+            _currentIndex = State(initialValue: index)
+        }
     }
     
     var body: some View {
-        Group {
-            if images.isEmpty {
-                ProgressView("加载中...")
-            } else {
-                ImageDetailView(images: images, currentIndex: $currentIndex)
-            }
-        }
-        .onAppear {
-            loadImages()
-        }
-    }
-    
-    private func loadImages() {
-        // Load all images (be careful with memory)
-        // Find index of initialItem
-        var loadedImages: [UIImage] = []
-        var foundIndex = 0
-        
-        for (index, item) in items.enumerated() {
-            if let data = item.imageData, let image = UIImage(data: data) {
-                loadedImages.append(image)
-                if item.id == initialItem.id {
-                    foundIndex = loadedImages.count - 1
-                }
-            }
-        }
-        
-        self.images = loadedImages
-        self.currentIndex = foundIndex
+        ImageDetailView(items: items, currentIndex: $currentIndex)
     }
 }

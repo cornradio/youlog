@@ -1,10 +1,10 @@
 import SwiftUI
-import UIKit // 确保导入UIKit，因为UIImage和UIGraphicsImageRenderer都在其中
+import UIKit
 
 struct ImageDetailView: View {
-    let images: [UIImage]  // 图片数组
+    let items: [Item]  // 修改为 Item 数组，实现延迟加载
     @Environment(\.dismiss) private var dismiss
-    @Binding var currentIndex: Int  // 当前显示的图片索引
+    @Binding var currentIndex: Int
     @State private var isFlipped: Bool = false
     @State private var showCompressionAlert = false
     @State private var isCompressing = false
@@ -13,17 +13,17 @@ struct ImageDetailView: View {
     // 压缩完成后的回调
     var onImageCompressed: ((UIImage, Int) -> Void)? = nil
 
-    private var image: UIImage { images[currentIndex] }
+    private var currentImage: UIImage? {
+        guard currentIndex >= 0 && currentIndex < items.count,
+              let data = items[currentIndex].imageData else { return nil }
+        return UIImage(data: data)
+    }
     
-    // 修正：直接计算当前图片的实际文件大小（如果已经压缩，就是压缩后的；如果未压缩，就是原始的）
     private var imageSize: String {
-        // 使用jpegData的默认质量或一个统一的质量来获取实际大小，
-        // 或者更准确的方法是存储图片时记录其编码大小。
-        // 为了演示，这里我们用一个默认的质量再次编码来估算当前显示图片的文件大小。
-        // 如果图片是PNG或其他格式，这里需要调整。假设都是JPEG。
-        let settings = CompressionSettings.shared
-        let data = image.jpegData(compressionQuality: settings.compressionQuality)
-        let sizeInBytes = data?.count ?? 0
+        guard currentIndex >= 0 && currentIndex < items.count,
+              let data = items[currentIndex].imageData else { return "0 KB" }
+        
+        let sizeInBytes = data.count
         if sizeInBytes >= 1024 * 1024 {
             return String(format: "%.1f MB", Double(sizeInBytes) / (1024 * 1024))
         } else {
@@ -35,11 +35,11 @@ struct ImageDetailView: View {
         if currentIndex > 0 {
             currentIndex -= 1
         } else {
-            currentIndex = images.count - 1
+            currentIndex = items.count - 1
         }
     }
     private func navigateToNext() {
-        if currentIndex < images.count - 1 {
+        if currentIndex < items.count - 1 {
             currentIndex += 1
         } else {
             currentIndex = 0
@@ -47,19 +47,16 @@ struct ImageDetailView: View {
     }
     
     private func compressCurrentImage() {
-        guard currentIndex < images.count else { return }
+        guard currentIndex < items.count else { return }
+        guard let originalImage = currentImage else { return }
         
         isCompressing = true
         
         DispatchQueue.global(qos: .userInitiated).async {
-            let originalImage = images[currentIndex]
-            
             // 获取原始图片大小
             let settings = CompressionSettings.shared
             guard let originalData = originalImage.jpegData(compressionQuality: settings.compressionQuality) else {
-                DispatchQueue.main.async {
-                    isCompressing = false
-                }
+                DispatchQueue.main.async { isCompressing = false }
                 return
             }
             let originalSize = originalData.count
@@ -67,35 +64,24 @@ struct ImageDetailView: View {
             if let compressedImage = forceCompressImage(originalImage) {
                 // 获取压缩后图片大小
                 guard let compressedData = compressedImage.jpegData(compressionQuality: settings.compressionQuality) else {
-                    DispatchQueue.main.async {
-                        isCompressing = false
-                    }
+                    DispatchQueue.main.async { isCompressing = false }
                     return
                 }
                 let compressedSize = compressedData.count
                 
                 DispatchQueue.main.async {
-                    // 只有压缩后文件更小时才替换
                     if compressedSize < originalSize {
-                        // 通过回调通知父视图更新图片
                         onImageCompressed?(compressedImage, currentIndex)
                         showCompressionSuccess = true
-                        
-                        // 2秒后自动隐藏成功提示
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             showCompressionSuccess = false
                         }
-                    } else {
-                        // 压缩后文件更大，不进行替换
-                        // 可以显示提示：文件已经很小，无需压缩
                     }
                     isCompressing = false
                 }
             } else {
                 DispatchQueue.main.async {
                     isCompressing = false
-                    // 可以在这里显示压缩失败的提示
-                    showCompressionSuccess = false
                 }
             }
         }
@@ -103,13 +89,11 @@ struct ImageDetailView: View {
     
     // 修改后的强制压缩函数
     private func forceCompressImage(_ image: UIImage) -> UIImage? {
-        // 使用设置中的压缩参数
         let settings = CompressionSettings.shared
         let targetWidth: CGFloat = settings.targetWidth
         let compressionQuality: CGFloat = settings.compressionQuality
         
         let originalSize = image.size
-        // 以“最长边不超过 targetWidth”为准，保持纵横比；不放大
         let shortside = min(originalSize.width, originalSize.height)
         let scale = min(1.0, targetWidth / max(shortside, 1)) 
         let newSize = CGSize(
@@ -120,24 +104,19 @@ struct ImageDetailView: View {
         // 重新采样的图片
         let format = UIGraphicsImageRendererFormat()
         format.scale = image.scale
-        format.opaque = true // 设置为不透明，避免白色背景
+        format.opaque = true 
         let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
         let resizedImage = renderer.image { context in
-            // 填充背景色为黑色，避免白线
             context.cgContext.setFillColor(UIColor.black.cgColor)
-//            context.cgContext(CGRect(origin: .zero, size: newSize))
-            
-            context.cgContext.interpolationQuality = .high // 使用高质量插值，以得到更好的缩放结果
+            context.cgContext.interpolationQuality = .high 
             image.draw(in: CGRect(origin: .zero, size: newSize))
         }
         
-        // 进一步进行JPEG质量压缩
         guard let data = resizedImage.jpegData(compressionQuality: compressionQuality),
               let compressedImage = UIImage(data: data) else {
             return nil
         }
         
-        // 裁切右边和下面1px避免白线
         let cropRect = CGRect(x: 0, y: 0, width: compressedImage.size.width - 1, height: compressedImage.size.height - 1)
         guard let cgImage = compressedImage.cgImage?.cropping(to: cropRect) else {
             return compressedImage
@@ -150,11 +129,16 @@ struct ImageDetailView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            ZoomableImageView(
-                image: image,
-                isFlipped: isFlipped,
-                currentIndex: currentIndex
-            )
+            if let img = currentImage {
+                ZoomableImageView(
+                    image: img,
+                    isFlipped: isFlipped,
+                    currentIndex: currentIndex
+                )
+            } else {
+                ProgressView()
+                    .tint(.white)
+            }
         }
         .safeAreaInset(edge: .bottom) {
             bottomMenu()
@@ -199,7 +183,7 @@ struct ImageDetailView: View {
                     showCompressionAlert = true
                 }) {
                     VStack(spacing: 2) {
-                        Text("\(currentIndex + 1) / \(images.count)")
+                        Text("\(currentIndex + 1) / \(items.count)")
                             .font(.system(.caption, design: .monospaced))
                             .fontWeight(.bold)
                             .foregroundColor(.white)
@@ -233,12 +217,14 @@ struct ImageDetailView: View {
                 
                 // 5. 分享
                 Button(action: {
-                    let av = UIActivityViewController(activityItems: [image], applicationActivities: nil)
-                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                       let window = windowScene.windows.first {
-                        av.popoverPresentationController?.sourceView = window
-                        av.popoverPresentationController?.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-                        window.rootViewController?.present(av, animated: true, completion: nil)
+                    if let img = currentImage {
+                        let av = UIActivityViewController(activityItems: [img], applicationActivities: nil)
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                           let window = windowScene.windows.first {
+                            av.popoverPresentationController?.sourceView = window
+                            av.popoverPresentationController?.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                            window.rootViewController?.present(av, animated: true, completion: nil)
+                        }
                     }
                 }) {
                     VStack(spacing: 4) {
@@ -255,6 +241,7 @@ struct ImageDetailView: View {
             }
             .padding(.bottom, 4) // 适配 Home Indicator
         }
+
         .background(.ultraThinMaterial)
         .alert("压缩图片", isPresented: $showCompressionAlert) {
             Button("取消", role: .cancel) { }

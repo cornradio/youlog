@@ -24,14 +24,7 @@ struct PhotoCard3: View {
         _selectedTag = State(initialValue: item.tag)
     }
     
-    private var itemImages: [UIImage] {
-        allItems.compactMap { item in
-            if let imageData = item.imageData {
-                return UIImage(data: imageData)
-            }
-            return nil
-        }
-    }
+
     
     private var currentItemIndex: Int {
         allItems.firstIndex(where: { $0.id == item.id }) ?? 0
@@ -157,7 +150,7 @@ struct PhotoCard3: View {
                 Text(NSLocalizedString("saved_to_photos", comment: ""))
             }
             .navigationDestination(isPresented: $showingFullScreen) {
-                ImageDetailView(images: itemImages, currentIndex: $currentImageIndex) { compressedImage, index in
+                ImageDetailView(items: allItems, currentIndex: $currentImageIndex) { compressedImage, index in
                     if index < allItems.count {
                         let targetItem = allItems[index]
                         if let compressedData = compressedImage.jpegData(compressionQuality: 0.8) {

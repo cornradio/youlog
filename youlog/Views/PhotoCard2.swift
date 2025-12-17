@@ -23,14 +23,7 @@ struct PhotoCard2: View {
         _selectedDate = State(initialValue: item.timestamp)
     }
     
-    private var itemImages: [UIImage] {
-        allItems.compactMap { item in
-            if let imageData = item.imageData {
-                return UIImage(data: imageData)
-            }
-            return nil
-        }
-    }
+
     
     private var currentItemIndex: Int {
         allItems.firstIndex(where: { $0.id == item.id }) ?? 0
@@ -204,7 +197,7 @@ struct PhotoCard2: View {
                 Text(NSLocalizedString("saved_to_photos", comment: ""))
             }
             .navigationDestination(isPresented: $showingFullScreen) {
-                ImageDetailView(images: itemImages, currentIndex: $currentImageIndex) { compressedImage, index in
+                ImageDetailView(items: allItems, currentIndex: $currentImageIndex) { compressedImage, index in
                     // 压缩完成后的回调：更新对应的 Item 的图片数据
                     if index < allItems.count {
                         let targetItem = allItems[index]
