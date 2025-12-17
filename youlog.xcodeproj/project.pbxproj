@@ -27,6 +27,19 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		693E860F2EF2A79400C3A4F4 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		6919A8CE2E7F9F760047EDF1 /* DataStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStatsView.swift; sourceTree = "<group>"; };
 		69B46ED22D96DF320087C40D /* youlog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = youlog.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -121,6 +134,7 @@
 				69B46ECE2D96DF320087C40D /* Sources */,
 				69B46ECF2D96DF320087C40D /* Frameworks */,
 				69B46ED02D96DF320087C40D /* Resources */,
+				693E860F2EF2A79400C3A4F4 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -189,7 +203,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1620;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					69B46ED12D96DF320087C40D = {
