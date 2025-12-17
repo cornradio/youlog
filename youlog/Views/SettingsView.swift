@@ -69,7 +69,7 @@ struct SettingsView: View {
 
                     Button(action: { viewMode = 2 }) {
                         HStack {
-                            Label("列表视图", systemImage: "list.bullet")
+                            Label("迷你视图", systemImage: "square.grid.3x3.fill")
                                 .foregroundStyle(.primary)
                             Spacer()
                             if viewMode == 2 {

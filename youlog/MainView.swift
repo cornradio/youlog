@@ -94,27 +94,29 @@ struct PhotoTimelineView3: View {
     let scrollToItem: (Item) -> Void
     @State private var isFirstAppear = true
     
+    // 定义迷你视图的网格列
+    private let miniColumns = [
+        GridItem(.adaptive(minimum: 80), spacing: 2)
+    ]
+    
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 0) { // 列表风格通常不需要大的间距，或者由 Divider 分隔
-                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                LazyVGrid(columns: miniColumns, spacing: 2) {
+                    ForEach(items) { item in
                         PhotoCard3(item: item, allItems: items)
                             .id(item.id)
-                            .onTapGesture { // 虽然 PhotoCard3 内部有点击逻辑，这里可以额外处理滚动定位
+                        // PhotoCard3 自带点击和 FullScreen 逻辑，无需在此处额外 onTap (除非为了滚动定位?? 
+                        // 原 MainView 中 PhotoCard3 有 onTapGesture 更新 selectedDate，可以保留)
+                            .simultaneousGesture(TapGesture().onEnded {
                                 withAnimation {
                                     selectedDate = item.timestamp
                                     scrollToItem(item)
                                 }
-                            }
-                        
-                        // 添加分割线，除了最后一个元素
-                        if index < items.count - 1 {
-                            Divider()
-                                .padding(.leading, 80) // 缩进风格
-                        }
+                            })
                     }
                 }
+                .padding(.horizontal, 2)
             }
             .onAppear {
                 if isFirstAppear {
