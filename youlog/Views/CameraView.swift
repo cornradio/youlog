@@ -50,6 +50,15 @@ private struct CameraPreviewView: View {
                 .ignoresSafeArea()
                 .rotationEffect(rotationAngle, anchor: .center)
             
+            if let ghostImage = camera.ghostImage {
+                Image(uiImage: ghostImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: previewSize.width, height: previewSize.height)
+                    .opacity(camera.ghostOpacity)
+                    .ignoresSafeArea()
+            }
+            
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
         }
@@ -143,6 +152,8 @@ private struct TopToolbarView: View {
                     .foregroundColor(.white)
                     .padding()
             }
+            
+            GhostImageControlView(camera: camera)
         }
         .confirmationDialog(NSLocalizedString("select_delay", comment: ""), isPresented: $showingDelayPicker) {
             ForEach([0, 3, 5, 10, 15], id: \.self) { seconds in
@@ -151,6 +162,115 @@ private struct TopToolbarView: View {
                 }
             }
             Button(NSLocalizedString("cancel", comment: ""), role: .cancel) {}
+        }
+    }
+}
+
+private struct GhostImageControlView: View {
+    @ObservedObject var camera: CameraModel
+    @State private var showingSettings = false
+    @State private var showingImagePicker = false
+    
+    var body: some View {
+        Button(action: { showingSettings = true }) {
+            Image(systemName: camera.ghostImage == nil ? "square.on.square" : "square.on.square.fill")
+                .font(.title2)
+                .foregroundColor(camera.ghostImage == nil ? .white : .yellow)
+                .padding()
+        }
+        .popover(isPresented: $showingSettings) {
+             VStack(spacing: 16) {
+                Text("虚影设置")
+                    .font(.headline)
+                    .padding(.top)
+                
+                HStack(spacing: 20) {
+                    Button(action: { showingImagePicker = true }) {
+                        VStack {
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.title)
+                            Text("选择照片")
+                                .font(.caption)
+                        }
+                        .frame(width: 80, height: 80)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+                    
+                    if camera.ghostImage != nil {
+                        Button(action: { camera.ghostImage = nil }) {
+                            VStack {
+                                Image(systemName: "trash")
+                                    .font(.title)
+                                    .foregroundColor(.red)
+                                Text("清除虚影")
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                            }
+                            .frame(width: 80, height: 80)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(12)
+                        }
+                    }
+                }
+                
+                if camera.ghostImage != nil {
+                    VStack(alignment: .leading) {
+                        Text("透明度: \(Int(camera.ghostOpacity * 100))%")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Slider(value: $camera.ghostOpacity, in: 0.1...0.9)
+                            .tint(.blue)
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            .padding()
+            .frame(width: 250)
+        }
+        .sheet(isPresented: $showingImagePicker) {
+            GhostPicker(image: $camera.ghostImage)
+        }
+    }
+}
+
+import PhotosUI
+
+struct GhostPicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var config = PHPickerConfiguration()
+        config.filter = .images
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let parent: GhostPicker
+
+        init(_ parent: GhostPicker) {
+            self.parent = parent
+        }
+
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            picker.dismiss(animated: true)
+
+            guard let provider = results.first?.itemProvider, provider.canLoadObject(ofClass: UIImage.self) else { return }
+
+            provider.loadObject(ofClass: UIImage.self) { [weak self] image, _ in
+                DispatchQueue.main.async {
+                    self?.parent.image = image as? UIImage
+                }
+            }
         }
     }
 }
@@ -221,6 +341,9 @@ class CameraModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
             UserDefaults.standard.set(isFrontCamera, forKey: "cameraIsFront")
         }
     }
+    
+    @Published var ghostImage: UIImage?
+    @Published var ghostOpacity: Double = 0.3
     
     override init() {
         super.init()
