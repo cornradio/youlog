@@ -216,6 +216,39 @@
         }
       }
     },
+    "batch_modify_confirm_msg" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "确定要将当前筛选的 %1$lld 张照片的标签修改为 \"%2$@\" 吗？"
+          }
+        }
+      }
+    },
+    "batch_modify_tag_all" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "批量修改"
+          }
+        }
+      }
+    },
+    "batch_modify_tags" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "批量修改标签"
+          }
+        }
+      }
+    },
     "camera_permission" : {
       "localizations" : {
         "en" : {
@@ -311,6 +344,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "确认"
+          }
+        }
+      }
+    },
+    "confirm_modify" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "确认修改"
           }
         }
       }

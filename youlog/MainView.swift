@@ -152,6 +152,8 @@ struct MainView: View {
     @AppStorage("viewMode") private var viewMode: Int = 0  // 0: Grid, 1: Card, 2: List
     @State private var showingSettings = false
     @State private var showingSystemCamera = false
+    @State private var showingBatchTagAlert = false
+    @State private var pendingTargetTag: String? = nil
     
     enum TimeRange {
         case day, week, month
@@ -308,6 +310,24 @@ struct MainView: View {
                             }) {
                                 Label(NSLocalizedString("edit_tags", comment: ""), systemImage: "pencil")
                             }
+
+                            if !filteredItems.isEmpty {
+                                Divider()
+                                Menu {
+                                    ForEach(tagManager.availableTags, id: \.self) { tag in
+                                        if !tagManager.isAllTag(tag) {
+                                            Button(action: {
+                                                pendingTargetTag = tag
+                                                showingBatchTagAlert = true
+                                            }) {
+                                                Text(tag)
+                                            }
+                                        }
+                                    }
+                                } label: {
+                                    Label(NSLocalizedString("batch_modify_tag_all", value: "批量修改", comment: ""), systemImage: "tag.fill")
+                                }
+                            }
                         } label: {
                             VStack(spacing: 4) {
                                 Image(systemName: "tag")
@@ -412,6 +432,23 @@ struct MainView: View {
             .sheet(isPresented: $showingHelp) {
                 HelpView()
             }
+            .confirmationDialog(
+                NSLocalizedString("batch_modify_tags", value: "批量修改标签", comment: ""),
+                isPresented: $showingBatchTagAlert,
+                actions: {
+                    Button(NSLocalizedString("confirm_modify", value: "确认修改", comment: ""), role: .destructive) {
+                        if let tag = pendingTargetTag {
+                            batchUpdateTags(to: tag)
+                        }
+                    }
+                    Button(NSLocalizedString("cancel", comment: ""), role: .cancel) {}
+                },
+                message: {
+                    if let tag = pendingTargetTag {
+                        Text(String(format: NSLocalizedString("batch_modify_confirm_msg", value: "确定要将当前筛选的 %lld 张照片的标签修改为 \"%@\" 吗？", comment: ""), filteredItems.count, tag))
+                    }
+                }
+            )
             .sheet(isPresented: $showingTagEditor) {
                 TagEditorView(selectedTag: $selectedTag)
             }
@@ -488,6 +525,15 @@ struct MainView: View {
                 print("Successfully deleted original photos")
             } else if let error = error {
                 print("Error deleting original photos: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    private func batchUpdateTags(to targetTag: String) {
+        let finalTag: String? = tagManager.isUntaggedTag(targetTag) ? nil : targetTag
+        withAnimation {
+            for item in filteredItems {
+                item.tag = finalTag
             }
         }
     }
