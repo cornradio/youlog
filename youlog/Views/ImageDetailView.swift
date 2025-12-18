@@ -156,10 +156,13 @@ struct ImageDetailView: View {
                     .tint(.white)
             }
         }
+        .ignoresSafeArea()
         .safeAreaInset(edge: .bottom) {
             bottomMenu()
         }
-        .navigationBarBackButtonHidden(true)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
+        // .navigationBarBackButtonHidden(true)
     }
 
     private func bottomMenu() -> some View {
@@ -168,14 +171,38 @@ struct ImageDetailView: View {
                 .background(Color.white.opacity(0.1))
             
             HStack(spacing: 0) {
-                // 1. 关闭
+                // // 1. 关闭
+                // Button(action: {
+                //     dismiss()
+                // }) {
+                //     VStack(spacing: 4) {
+                //         Image(systemName: "xmark")
+                //             .font(.system(size: 20, weight: .medium))
+                //         Text("关闭")
+                //             .font(.caption2)
+                //     }
+                //     .foregroundColor(.white.opacity(0.9))
+                //     .frame(maxWidth: .infinity)
+                //     .padding(.vertical, 10)
+                //     .contentShape(Rectangle())
+                // }
+
+                                // 5. 分享
                 Button(action: {
-                    dismiss()
+                    if let img = currentImage {
+                        let av = UIActivityViewController(activityItems: [img], applicationActivities: nil)
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                           let window = windowScene.windows.first {
+                            av.popoverPresentationController?.sourceView = window
+                            av.popoverPresentationController?.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                            window.rootViewController?.present(av, animated: true, completion: nil)
+                        }
+                    }
                 }) {
                     VStack(spacing: 4) {
-                        Image(systemName: "xmark")
+                        Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 20, weight: .medium))
-                        Text("关闭")
+                        Text("分享")
                             .font(.caption2)
                     }
                     .foregroundColor(.white.opacity(0.9))
@@ -231,29 +258,7 @@ struct ImageDetailView: View {
                         .contentShape(Rectangle())
                 }
                 
-                // 5. 分享
-                Button(action: {
-                    if let img = currentImage {
-                        let av = UIActivityViewController(activityItems: [img], applicationActivities: nil)
-                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                           let window = windowScene.windows.first {
-                            av.popoverPresentationController?.sourceView = window
-                            av.popoverPresentationController?.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-                            window.rootViewController?.present(av, animated: true, completion: nil)
-                        }
-                    }
-                }) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 20, weight: .medium))
-                        Text("分享")
-                            .font(.caption2)
-                    }
-                    .foregroundColor(.white.opacity(0.9))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .contentShape(Rectangle())
-                }
+
                 
                 // 6. 删除
                 Button(action: {
@@ -281,7 +286,7 @@ struct ImageDetailView: View {
                 compressCurrentImage()
             }
         } message: {
-            Text("压缩后图片质量会降低，但文件大小会减小。是否继续？")
+            Text("压缩后图片质量会降低，是否继续？")
         }
     }
 }
@@ -300,6 +305,9 @@ struct ZoomableImageView: UIViewRepresentable {
         scrollView.backgroundColor = .clear
         scrollView.showsVerticalScrollIndicator = false
         scrollView.showsHorizontalScrollIndicator = false
+        
+        // 关键修正：防止系统自动调整内边距导致图片下移
+        scrollView.contentInsetAdjustmentBehavior = .never
 
         let imageView = UIImageView(image: image)
         imageView.contentMode = .scaleAspectFit
