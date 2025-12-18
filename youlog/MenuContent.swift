@@ -16,15 +16,29 @@ import SwiftUI
         var body: some View {
             // 第一组：保存相册、分享照片
             Button(action: {
-                UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
+                // 优先从 item.imageData 加载原始图片，确保保存的是全尺寸图
+                let imageToSave: UIImage
+                if let data = item.imageData, let original = UIImage(data: data) {
+                    imageToSave = original
+                } else {
+                    imageToSave = uiImage
+                }
+                UIImageWriteToSavedPhotosAlbum(imageToSave, nil, nil, nil)
                 showingSaveSuccess = true
             }) {
                 Label(NSLocalizedString("save_to_photos", comment: ""), systemImage: "photo.on.rectangle")
             }
             
             Button(action: {
-                // 使用与ImageDetailView相同的分享实现
-                let av = UIActivityViewController(activityItems: [uiImage], applicationActivities: nil)
+                // 优先分享原始全尺寸图片
+                let imageToShare: UIImage
+                if let data = item.imageData, let original = UIImage(data: data) {
+                    imageToShare = original
+                } else {
+                    imageToShare = uiImage
+                }
+                
+                let av = UIActivityViewController(activityItems: [imageToShare], applicationActivities: nil)
                 if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                    let window = windowScene.windows.first {
                     av.popoverPresentationController?.sourceView = window
