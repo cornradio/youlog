@@ -9,6 +9,7 @@ struct ImageDetailView: View {
     @State private var showCompressionAlert = false
     @State private var isCompressing = false
     @State private var showCompressionSuccess = false
+    @Environment(\.modelContext) private var modelContext
     
     // 压缩完成后的回调
     var onImageCompressed: ((UIImage, Int) -> Void)? = nil
@@ -125,6 +126,21 @@ struct ImageDetailView: View {
         return UIImage(cgImage: cgImage, scale: compressedImage.scale, orientation: compressedImage.imageOrientation)
     }
 
+    private func deleteCurrentItem() {
+        guard currentIndex >= 0 && currentIndex < items.count else { return }
+        let itemToDelete = items[currentIndex]
+        
+        if currentIndex < items.count - 1 {
+            // 有下一张，跳到下一张再删除
+            currentIndex += 1
+            modelContext.delete(itemToDelete)
+        } else {
+            // 是最后一张，直接退出再删除
+            dismiss()
+            modelContext.delete(itemToDelete)
+        }
+    }
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -234,6 +250,22 @@ struct ImageDetailView: View {
                             .font(.caption2)
                     }
                     .foregroundColor(.white.opacity(0.9))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .contentShape(Rectangle())
+                }
+                
+                // 6. 删除
+                Button(action: {
+                    deleteCurrentItem()
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 20, weight: .medium))
+                        Text("删除")
+                            .font(.caption2)
+                    }
+                    .foregroundColor(.red.opacity(0.9))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
                     .contentShape(Rectangle())
