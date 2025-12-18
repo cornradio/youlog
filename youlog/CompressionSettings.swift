@@ -64,4 +64,66 @@ class CompressionSettings: ObservableObject {
         defaultUseSystemCamera = false
         autoCompressAlbumImport = false
     }
+    
+    // 统一的图片压缩处理方法
+    func compressImage(_ image: UIImage) -> Data? {
+        let targetWidth = self.targetWidth
+        let compressionQuality = self.compressionQuality
+        
+        let originalSize = image.size
+        
+        var newSize: CGSize
+        if originalSize.width > targetWidth {
+            let ratio = targetWidth / originalSize.width
+            newSize = CGSize(
+                width: targetWidth,
+                height: originalSize.height * ratio
+            )
+        } else {
+            newSize = originalSize
+        }
+        
+        // 使用 UIGraphicsImageRenderer 处理缩放
+        let format = UIGraphicsImageRendererFormat()
+        format.opaque = true
+        format.scale = image.scale
+        
+        let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
+        let resizedImage = renderer.image { context in
+            // 填充黑色背景
+            UIColor.black.setFill()
+            context.fill(CGRect(origin: .zero, size: newSize))
+            
+            // 设置高质量插值
+            context.cgContext.interpolationQuality = .high
+            
+            // 绘制图片
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+        
+        // 应用质量压缩
+        guard let compressedData = resizedImage.jpegData(compressionQuality: compressionQuality),
+              let compressedImage = UIImage(data: compressedData) else {
+            return resizedImage.jpegData(compressionQuality: compressionQuality)
+        }
+        
+        // 裁切右边和下面1px (解决某些情况下的边缘白线/黑线问题)
+        guard let cgImage = compressedImage.cgImage else { 
+            return compressedData 
+        }
+        
+        let cropRect = CGRect(
+            x: 0,
+            y: 0,
+            width: max(1, cgImage.width - 1),
+            height: max(1, cgImage.height - 1)
+        )
+        
+        if let croppedCGImage = cgImage.cropping(to: cropRect) {
+            let finalImage = UIImage(cgImage: croppedCGImage, scale: compressedImage.scale, orientation: compressedImage.imageOrientation)
+            return finalImage.jpegData(compressionQuality: compressionQuality)
+        }
+        
+        return compressedData
+    }
 }

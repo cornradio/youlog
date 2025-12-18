@@ -59,10 +59,22 @@ struct ImagePickerView: UIViewControllerRepresentable {
                 
                 if result.itemProvider.canLoadObject(ofClass: UIImage.self) {
                     result.itemProvider.loadObject(ofClass: UIImage.self) { image, error in
-                        if let image = image as? UIImage,
-                           let data = image.jpegData(compressionQuality: 0.8) {
-                            DispatchQueue.main.async {
-                                processedImages.append((data, assetId))
+                        if let image = image as? UIImage {
+                            let settings = CompressionSettings.shared
+                            let data: Data?
+                            
+                            if settings.autoCompressAlbumImport {
+                                data = settings.compressImage(image)
+                            } else {
+                                // 如果没开启自动压缩，也建议进行轻度处理以减小体积，或者由用户决定
+                                // 这里维持之前的逻辑或使用较高质量
+                                data = image.jpegData(compressionQuality: 0.9)
+                            }
+                            
+                            if let data = data {
+                                DispatchQueue.main.async {
+                                    processedImages.append((data, assetId))
+                                }
                             }
                         }
                         group.leave()
