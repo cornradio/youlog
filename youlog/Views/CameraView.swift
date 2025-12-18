@@ -10,7 +10,11 @@ struct CameraView: View {
     var body: some View {
         ZStack {
             CameraPreviewView(camera: camera)
-            CameraOverlayView(camera: camera, selectedTag: $selectedTag, dismiss: dismiss)
+            VStack {
+                CameraOverlayView(camera: camera, selectedTag: $selectedTag, dismiss: dismiss)
+                    // .padding(.top, 40) // Ensure it's below the notch/dynamic island
+                Spacer()
+            }
         }
         .onAppear {
             camera.checkPermissions()
@@ -40,7 +44,7 @@ struct CameraView: View {
 
 // 相机预览视图
 private struct CameraPreviewView: View {
-    let camera: CameraModel
+    @ObservedObject var camera: CameraModel
     @State private var orientation: UIDeviceOrientation = .portrait
     @State private var previewSize: CGSize = UIScreen.main.bounds.size
     
@@ -50,7 +54,7 @@ private struct CameraPreviewView: View {
                 .ignoresSafeArea()
                 .rotationEffect(rotationAngle, anchor: .center)
             
-            if let ghostImage = camera.ghostImage {
+            if camera.isGhostEnabled, let ghostImage = camera.ghostImage {
                 Image(uiImage: ghostImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -58,9 +62,6 @@ private struct CameraPreviewView: View {
                     .opacity(camera.ghostOpacity)
                     .ignoresSafeArea()
             }
-            
-            Color.black.opacity(0.3)
-                .ignoresSafeArea()
         }
         .onAppear {
             orientation = UIDevice.current.orientation
@@ -90,12 +91,12 @@ private struct CameraPreviewView: View {
 
 // 相机覆盖视图
 private struct CameraOverlayView: View {
-    let camera: CameraModel
+    @ObservedObject var camera: CameraModel
     @Binding var selectedTag: String?
     let dismiss: DismissAction
     
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             TopToolbarView(camera: camera, dismiss: dismiss)
             TagSelectorView(selectedTag: $selectedTag)
             Spacer()
@@ -106,7 +107,7 @@ private struct CameraOverlayView: View {
 
 // 顶部工具栏视图
 private struct TopToolbarView: View {
-    let camera: CameraModel
+    @ObservedObject var camera: CameraModel
     let dismiss: DismissAction
     @State private var showingDelayPicker = false
     
@@ -173,48 +174,78 @@ private struct GhostImageControlView: View {
     
     var body: some View {
         Button(action: { showingSettings = true }) {
-            Image(systemName: camera.ghostImage == nil ? "square.on.square" : "square.on.square.fill")
+            Image(systemName: camera.isGhostEnabled ? "square.on.square.fill" : "square.on.square")
                 .font(.title2)
-                .foregroundColor(camera.ghostImage == nil ? .white : .yellow)
+                .foregroundColor(camera.isGhostEnabled ? .yellow : .white)
                 .padding()
         }
         .popover(isPresented: $showingSettings) {
              VStack(spacing: 16) {
-                Text("虚影设置")
+                Text("虚影参考")
                     .font(.headline)
                     .padding(.top)
                 
-                HStack(spacing: 20) {
-                    Button(action: { showingImagePicker = true }) {
-                        VStack {
-                            Image(systemName: "photo.on.rectangle")
-                                .font(.title)
-                            Text("选择照片")
-                                .font(.caption)
-                        }
-                        .frame(width: 80, height: 80)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(12)
-                    }
+                 Toggle("开启虚影叠加", isOn: $camera.isGhostEnabled)
+                     .tint(AppConstants.themeManager.currentTheme.color)
+                     .padding(.horizontal)
+                
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("历史记录")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     
-                    if camera.ghostImage != nil {
-                        Button(action: { camera.ghostImage = nil }) {
-                            VStack {
-                                Image(systemName: "trash")
-                                    .font(.title)
-                                    .foregroundColor(.red)
-                                Text("清除虚影")
-                                    .font(.caption)
-                                    .foregroundColor(.red)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            // 新增按钮
+                            Button(action: { showingImagePicker = true }) {
+                                VStack {
+                                    Image(systemName: "plus")
+                                        .font(.title2)
+                                    Text("添加")
+                                        .font(.caption2)
+                                }
+                                .frame(width: 60, height: 60)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(10)
                             }
-                            .frame(width: 80, height: 80)
-                            .background(Color.red.opacity(0.1))
-                            .cornerRadius(12)
+                            
+                            ForEach(camera.ghostHistory, id: \.self) { fileName in
+                                if let thumb = camera.getGhostThumbnail(fileName: fileName) {
+                                    ZStack(alignment: .topTrailing) {
+                                        Image(uiImage: thumb)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 60, height: 60)
+                                            .cornerRadius(10)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(camera.ghostImage != nil && camera.ghostHistory.firstIndex(of: fileName) == 0 ? Color.yellow : Color.clear, lineWidth: 2)
+                                            )
+                                            .onTapGesture {
+                                                camera.selectGhost(fileName: fileName)
+                                            }
+                                        
+                                        Button(action: {
+                                            camera.removeGhostFromHistory(fileName: fileName)
+                                        }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .foregroundColor(.red)
+                                                .background(Circle().fill(Color.white))
+                                                .font(.caption)
+                                        }
+                                        .offset(x: 5, y: -5)
+                                    }
+                                }
+                            }
                         }
+                        .padding(.vertical, 5)
                     }
                 }
+                .padding(.horizontal)
                 
-                if camera.ghostImage != nil {
+                if camera.isGhostEnabled && camera.ghostImage != nil {
                     VStack(alignment: .leading) {
                         Text("透明度: \(Int(camera.ghostOpacity * 100))%")
                             .font(.caption)
@@ -227,10 +258,12 @@ private struct GhostImageControlView: View {
                 }
             }
             .padding()
-            .frame(width: 250)
+            .frame(width: 300)
         }
         .sheet(isPresented: $showingImagePicker) {
-            GhostPicker(image: $camera.ghostImage)
+            GhostPicker(onImagePicked: { image in
+                camera.addToHistory(image: image)
+            })
         }
     }
 }
@@ -238,7 +271,7 @@ private struct GhostImageControlView: View {
 import PhotosUI
 
 struct GhostPicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
+    let onImagePicked: (UIImage) -> Void
 
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration()
@@ -264,11 +297,15 @@ struct GhostPicker: UIViewControllerRepresentable {
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             picker.dismiss(animated: true)
 
-            guard let provider = results.first?.itemProvider, provider.canLoadObject(ofClass: UIImage.self) else { return }
+            guard let provider = results.first?.itemProvider else { return }
 
-            provider.loadObject(ofClass: UIImage.self) { [weak self] image, _ in
-                DispatchQueue.main.async {
-                    self?.parent.image = image as? UIImage
+            if provider.canLoadObject(ofClass: UIImage.self) {
+                provider.loadObject(ofClass: UIImage.self) { [weak self] image, _ in
+                    if let uiImage = image as? UIImage {
+                        DispatchQueue.main.async {
+                            self?.parent.onImagePicked(uiImage)
+                        }
+                    }
                 }
             }
         }
@@ -300,7 +337,7 @@ private struct TagSelectorView: View {
 
 // 底部控制视图
 private struct BottomControlView: View {
-    let camera: CameraModel
+    @ObservedObject var camera: CameraModel
     
     var body: some View {
         VStack(spacing: 20) {
@@ -343,13 +380,96 @@ class CameraModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
     }
     
     @Published var ghostImage: UIImage?
-    @Published var ghostOpacity: Double = 0.3
+    @Published var ghostOpacity: Double = 0.3 {
+        didSet {
+            UserDefaults.standard.set(ghostOpacity, forKey: "cameraGhostOpacity")
+        }
+    }
+    @Published var isGhostEnabled: Bool = false
+    @Published var ghostHistory: [String] = [] // Filenames in Documents/ghosts/
+    
+    private let ghostsDir = "ghosts"
     
     override init() {
         super.init()
+        // 创建 ghosts 目录内容
+        ensureGhostsDirectory()
+        
         // 从 UserDefaults 读取保存的设置
         delaySeconds = UserDefaults.standard.integer(forKey: "cameraDelaySeconds")
         isFrontCamera = UserDefaults.standard.bool(forKey: "cameraIsFront")
+        
+        let savedOpacity = UserDefaults.standard.double(forKey: "cameraGhostOpacity")
+        if savedOpacity > 0 {
+            ghostOpacity = savedOpacity
+        }
+        
+        ghostHistory = UserDefaults.standard.stringArray(forKey: "cameraGhostHistory") ?? []
+        
+        // 默认不开启虚影，但如果有历史，可以点击开启
+    }
+    
+    private func ensureGhostsDirectory() {
+        let url = getGhostsDirectoryURL()
+        if !FileManager.default.fileExists(atPath: url.path) {
+            try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        }
+    }
+    
+    private func getGhostsDirectoryURL() -> URL {
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        return paths[0].appendingPathComponent(ghostsDir)
+    }
+    
+    func addToHistory(image: UIImage) {
+        let fileName = "ghost_\(Int(Date().timeIntervalSince1970))_\(UUID().uuidString.prefix(4)).jpg"
+        let url = getGhostsDirectoryURL().appendingPathComponent(fileName)
+        
+        if let data = image.jpegData(compressionQuality: 0.7) {
+            try? data.write(to: url)
+            
+            // 加入历史并去重保持前 10 个
+            var newHistory = ghostHistory
+            newHistory.insert(fileName, at: 0)
+            if newHistory.count > 10 {
+                let toDelete = newHistory.removeLast()
+                try? FileManager.default.removeItem(at: getGhostsDirectoryURL().appendingPathComponent(toDelete))
+            }
+            
+            ghostHistory = newHistory
+            UserDefaults.standard.set(ghostHistory, forKey: "cameraGhostHistory")
+            
+            selectGhost(fileName: fileName)
+        }
+    }
+    
+    func selectGhost(fileName: String) {
+        let url = getGhostsDirectoryURL().appendingPathComponent(fileName)
+        if let data = try? Data(contentsOf: url) {
+            ghostImage = UIImage(data: data)
+            isGhostEnabled = true
+        }
+    }
+    
+    func removeGhostFromHistory(fileName: String) {
+        let url = getGhostsDirectoryURL().appendingPathComponent(fileName)
+        try? FileManager.default.removeItem(at: url)
+        
+        ghostHistory.removeAll { $0 == fileName }
+        UserDefaults.standard.set(ghostHistory, forKey: "cameraGhostHistory")
+        
+        if ghostImage != nil && ghostHistory.isEmpty {
+            ghostImage = nil
+            isGhostEnabled = false
+        }
+    }
+    
+    func getGhostThumbnail(fileName: String) -> UIImage? {
+        let url = getGhostsDirectoryURL().appendingPathComponent(fileName)
+        if let data = try? Data(contentsOf: url) {
+            return UIImage(data: data)
+        }
+        return nil
     }
     
     func checkPermissions() {
